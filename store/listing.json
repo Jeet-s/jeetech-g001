@@ -11,30 +11,30 @@
     "swipe puzzle",
     "one handed",
     "offline puzzle",
-    "brain teaser",
-    "fill puzzle",
-    "grid puzzle",
-    "casual puzzle",
     "daily puzzle",
-    "logic puzzle",
     "relaxing puzzle",
+    "brain teaser",
+    "tile fill",
     "minimalist puzzle",
-    "haptics",
-    "accessible puzzle",
-    "quick levels"
+    "logic puzzle",
+    "quick levels",
+    "casual puzzle",
+    "cozy puzzle",
+    "accessibility",
+    "colorblind friendly"
   ],
-  "release_notes": "Launch version: • 6 themed chapters with handcrafted levels • Gate sequencing, switches, one-way and crumble tiles • Daily Puzzle with streaks • Hints, Undo, and +30s Time as optional rewards • Accessibility: colorblind palettes, high-contrast mode, haptics toggle • Cosmetic brush/trail unlocks • Performance and battery optimizations",
+  "release_notes": "Launch build: 60+ handcrafted levels, Daily Puzzle, color-gate sequencing, switches, one-way and crumble tiles, optional timers, hints/undos, accessible colorblind palettes and high-contrast mode, haptics, offline-friendly play, and IAP for remove-ads, coins, and cosmetics. Performance and stability optimizations included.",
   "content_rating": "Everyone",
-  "full_description": "Swipe to paint satisfying paths through clean, bite-sized mazes. Plan your route, unlock color-coded gates in the right order, tap switches, and outsmart one-way tiles to fill the board. Quick 1–3 minute puzzles with cozy vibes, tactile haptics, and optional timers.\n\nWhy you’ll enjoy Path Painter:\n- Smart gate logic: paint colors in sequence to open doors and reach new areas.\n- Easy to pick up: simple swipe controls, instant fun in portrait.\n- Satisfying feedback: smooth paint trails, gentle sounds, and haptics.\n- Accessibility built-in: high-contrast mode, colorblind-friendly palettes and patterns.\n- Play your way: zen flow with no timer, or add a gentle timer for extra challenge.\n- Daily Puzzle: one fresh challenge every day.\n- Collect cosmetics: unlock brush and trail styles with coins earned from play.\n\nPlay sessions fit your day—finish a level on a break, then come back for more. Earn stars and coins, use hints or undos when you’re stuck, and progress through handcrafted chapters from basics to expert layouts.\n\nFeatures:\n- 100+ handcrafted levels across themed chapters\n- Undo and Reset for stress-free solving\n- Rewarded boosts: +1 Hint, +1 Undo, or +30s Time when you need it\n- Offline-friendly and one-handed\n\nMonetization:\n- Free to play with optional ads\n- IAP: Remove Ads, coin packs, and purely cosmetic bundles (no gameplay advantage)\n\nPaint the perfect path. Open every gate. Enjoy the flow.",
+  "full_description": "Relaxing yet smart swipe-to-paint puzzles in bite-sized levels. Draw a continuous path to fill tiles, unlock color gates in sequence, and flip switches to open new routes. Each level is a quick brain-teaser you can finish in under a minute, with cozy visuals, satisfying haptics, and accessible colorblind patterns.\n\nWhy you’ll love it:\n- Satisfying swipe-to-paint mazes with crisp feedback\n- Gate logic and color sequencing for deeper strategy\n- Quick levels (30–120s) perfect for one-handed play\n- Optional timers and stars for extra challenge\n- Daily Puzzle and chapter map progression\n- Accessible: high-contrast mode and colorblind palettes with patterns\n- Offline-friendly; play anywhere\n\nHelpful tools:\n- Free 1-step undo; more via coins or rewarded ads\n- Hints, +30s time, and ghost path preview\n- Reset anytime if you want a fresh start\n\nFair and friendly:\n- Free to play with optional ads and IAP (remove ads, cosmetics, coin packs)\n- No loot boxes or pay-to-win—cosmetics only\n\nMaster the path, crack the sequence, and paint the board!",
   "screenshots_plan": [
     "Swipe to paint satisfying paths",
     "Unlock color gates in the right order",
     "Tap switches and navigate one-way tiles",
-    "Quick 1–3 minute levels with optional timer",
+    "Quick levels with optional timers and stars",
     "Daily Puzzle and cozy themes",
-    "Colorblind-friendly palettes and patterns",
-    "Earn stars and coins to progress",
-    "Customize brushes, trails, and backgrounds"
+    "Accessible colorblind palettes and patterns",
+    "Earn coins to get hints, undos, and cosmetics",
+    "Progress through chapters on the map"
   ],
-  "short_description": "Swipe to paint mazes, unlock color gates, and solve quick brain-teasers."
+  "short_description": "Swipe to paint mazes, unlock gates, and outsmart clever color puzzles."
 }

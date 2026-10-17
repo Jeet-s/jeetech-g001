@@ -17,7 +17,20 @@ module.exports = ({ config }) => ({
     ["expo-iap", { android: { store: "play" } }],
     [
       "expo-build-properties",
-      { android: { minSdkVersion: 24 } },
+      {
+        android: {
+          minSdkVersion: 24,
+          // Release builds are minified (R8). Room/WorkManager (pulled in by the
+          // AdMob SDK) load generated *_Impl classes by reflection — without
+          // these rules the app crashes on launch.
+          extraProguardRules: [
+            "-keep class * extends androidx.room.RoomDatabase { <init>(); }",
+            "-keep class androidx.work.impl.** { *; }",
+            "-keep class androidx.startup.** { *; }",
+            "-dontwarn androidx.work.**",
+          ].join("\n"),
+        },
+      },
     ],
   ],
 });
