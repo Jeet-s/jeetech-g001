@@ -34,6 +34,8 @@ export interface LevelSpec {
   parMoves: number;
   /** 0 = untimed. */
   timeLimitSeconds: number;
+  /** Short teaching tip shown on early / new-mechanic levels. */
+  hint?: string;
 }
 
 export type Direction = "up" | "down" | "left" | "right";

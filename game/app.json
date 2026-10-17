@@ -2,17 +2,19 @@
   "expo": {
     "name": "Path Painter",
     "slug": "path-painter",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "android": {
       "package": "com.jeetech.g001",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.SYSTEM_ALERT_WINDOW"
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
-    }
+    },
+    "scheme": "pathpainter"
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Modal, View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { store } from "../modules/store";
 import { analytics } from "../modules/analytics";
+import { feedback } from "../modules/feedback";
 import {
   type Colors,
   PALETTE_ORDER,
@@ -28,11 +29,13 @@ export function SettingsModal({
   function toggle(key: "sound" | "haptics" | "highContrast") {
     const value = !settings[key];
     store.setSettings({ [key]: value });
+    feedback.tap(); // confirm with the (possibly just-enabled) feedback itself
     analytics.track("settings_change", { option: key, value });
   }
 
   function setPalette(p: Palette) {
     store.setSettings({ palette: p });
+    feedback.tap();
     analytics.track("settings_change", { option: "palette", value: p });
   }
 
@@ -81,7 +84,13 @@ export function SettingsModal({
               readable with any palette.
             </Text>
 
-            <Pressable style={[styles.close, { backgroundColor: colors.paint }]} onPress={onClose}>
+            <Pressable
+              style={[styles.close, { backgroundColor: colors.paint }]}
+              onPress={() => {
+                feedback.tap();
+                onClose();
+              }}
+            >
               <Text style={styles.closeText}>Done</Text>
             </Pressable>
           </ScrollView>
@@ -123,7 +132,7 @@ const styles = StyleSheet.create({
   switchThumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#ffffff" },
   section: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, marginTop: 8 },
   paletteRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  palette: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 2 },
+  palette: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 2, minHeight: 48, justifyContent: "center" },
   help: { fontSize: 12, lineHeight: 18 },
   close: { marginTop: 12, padding: 16, borderRadius: 14, alignItems: "center" },
   closeText: { color: "#0b0c10", fontWeight: "800", fontSize: 16 },

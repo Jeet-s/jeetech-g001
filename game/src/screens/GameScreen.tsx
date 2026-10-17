@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   PanResponder,
   Dimensions,
   ScrollView,
+  Animated,
+  Easing,
 } from "react-native";
 import { PathEngine, type Direction } from "../game/PathEngine";
 import { LEVELS, CHAPTERS, levelById, TOTAL_LEVELS } from "../game/levels";
@@ -14,6 +16,7 @@ import { makeColors, type Colors } from "../game/theme";
 import { analytics } from "../modules/analytics";
 import { ads } from "../modules/ads";
 import { store } from "../modules/store";
+import { feedback } from "../modules/feedback";
 import { SettingsModal } from "./SettingsModal";
 
 const HINT_COST = 40;
@@ -21,7 +24,23 @@ const SWIPE_THRESHOLD = 18;
 
 type ViewMode = "map" | "play";
 
-export function GameScreen({ onOpenShop }: { onOpenShop: () => void }) {
+/** Optional directive used only by the store-screenshot renderer to open the
+ *  app directly in a specific, attractive state (a level mid-solve, the win
+ *  screen, the progress map). Normal play never passes this. */
+export interface ScreenshotConfig {
+  view: ViewMode;
+  levelId?: number;
+  moves?: Direction[];
+  showWin?: boolean;
+}
+
+export function GameScreen({
+  onOpenShop,
+  screenshot,
+}: {
+  onOpenShop?: () => void;
+  screenshot?: ScreenshotConfig;
+}) {
   const [snap, setSnap] = useState(store.get());
   useEffect(() => store.subscribe(setSnap), []);
 
@@ -30,11 +49,12 @@ export function GameScreen({ onOpenShop }: { onOpenShop: () => void }) {
     [snap.settings.palette, snap.settings.highContrast]
   );
 
-  const [view, setView] = useState<ViewMode>("map");
-  const [levelId, setLevelId] = useState(1);
+  const [view, setView] = useState<ViewMode>(screenshot?.view ?? "map");
+  const [levelId, setLevelId] = useState(screenshot?.levelId ?? 1);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   function openLevel(id: number) {
+    feedback.tap();
     setLevelId(id);
     setView("play");
   }
@@ -56,6 +76,7 @@ export function GameScreen({ onOpenShop }: { onOpenShop: () => void }) {
           onExit={() => setView("map")}
           onSettings={() => setSettingsOpen(true)}
           onGoToLevel={openLevel}
+          demo={screenshot}
         />
       )}
       <SettingsModal
@@ -78,7 +99,7 @@ function MapView({
   colors: Colors;
   onPlay: (id: number) => void;
   onSettings: () => void;
-  onOpenShop: () => void;
+  onOpenShop?: () => void;
 }) {
   const state = store.get();
   return (
@@ -91,13 +112,19 @@ function MapView({
         <View style={styles.mapButtons}>
           <Pressable
             style={[styles.pill, { backgroundColor: colors.surface }]}
-            onPress={onOpenShop}
+            onPress={() => {
+              feedback.tap();
+              onOpenShop?.();
+            }}
           >
             <Text style={[styles.pillText, { color: colors.accent }]}>🛍 Shop</Text>
           </Pressable>
           <Pressable
             style={[styles.pill, { backgroundColor: colors.surface }]}
-            onPress={onSettings}
+            onPress={() => {
+              feedback.tap();
+              onSettings();
+            }}
           >
             <Text style={[styles.pillText, { color: colors.accent }]}>⚙ Settings</Text>
           </Pressable>
@@ -165,12 +192,14 @@ function PlayView({
   onExit,
   onSettings,
   onGoToLevel,
+  demo,
 }: {
   levelId: number;
   colors: Colors;
   onExit: () => void;
   onSettings: () => void;
   onGoToLevel: (id: number) => void;
+  demo?: ScreenshotConfig;
 }) {
   const level = levelById(levelId)!;
   const engineRef = useRef<PathEngine>(new PathEngine(level));
@@ -180,30 +209,69 @@ function PlayView({
   const [overlay, setOverlay] = useState<Overlay>({ kind: "none" });
   const [timeLeft, setTimeLeft] = useState(level.timeLimitSeconds);
   const [hintDir, setHintDir] = useState<Direction | null>(null);
+  const [showHint, setShowHint] = useState<boolean>(!!level.hint && !demo);
+
+  // A quick scale pulse on the board gives instant visual feedback per swipe.
+  const pulse = useRef(new Animated.Value(0)).current;
+  const boardScale = pulse.interpolate({
+    inputRange: [0, 0.45, 1],
+    outputRange: [1, 1.03, 1],
+  });
+  function triggerPulse() {
+    pulse.setValue(0);
+    Animated.timing(pulse, {
+      toValue: 1,
+      duration: 160,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  }
 
   useEffect(() => {
     analytics.track("level_start", { level: levelId, chapter: level.chapter });
   }, [levelId, level.chapter]);
 
+  // Screenshot mode: replay a fixed set of swipes (and optionally the win card)
+  // so the capture shows a real, mid-solve or just-won board — no mock-ups.
+  useEffect(() => {
+    if (!demo) return;
+    const engine = engineRef.current;
+    for (const dir of demo.moves ?? []) engine.move(dir);
+    if (demo.showWin) {
+      const stars = engine.status === "won" ? engine.starsForMoves() : 3;
+      setOverlay({ kind: "won", stars, coins: 10 + stars * 10 });
+    }
+    rerender();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Countdown timer for timed levels.
   useEffect(() => {
+    if (demo) return;
     if (level.timeLimitSeconds <= 0) return;
     if (overlay.kind !== "none") return;
     if (timeLeft <= 0) {
       engineRef.current.timeUp();
       analytics.track("level_fail", { level: levelId, reason: "timer" });
+      feedback.fail();
       setOverlay({ kind: "lost" });
       return;
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [timeLeft, overlay.kind, level.timeLimitSeconds, levelId]);
+  }, [timeLeft, overlay.kind, level.timeLimitSeconds, levelId, demo]);
 
   function applyMove(dir: Direction) {
     const engine = engineRef.current;
     if (engine.status !== "playing" || overlay.kind !== "none") return;
     setHintDir(null);
+    const movesBefore = engine.moves;
+    const gatesBefore = engine.openGroups.size;
     const status = engine.move(dir);
+    if (engine.moves === movesBefore) return; // hit a wall immediately — no-op
+    triggerPulse();
+    if (engine.openGroups.size > gatesBefore) feedback.gate();
+    else feedback.move();
     rerender();
     if (status === "won") finishWin();
   }
@@ -220,6 +288,7 @@ function PlayView({
       coins,
     });
     setOverlay({ kind: "won", stars, coins });
+    feedback.win();
     ads.showInterstitial();
   }
 
@@ -296,13 +365,25 @@ function PlayView({
     <View style={styles.flex}>
       {/* HUD */}
       <View style={styles.hud}>
-        <Pressable onPress={onExit} style={[styles.pill, { backgroundColor: colors.surface }]}>
+        <Pressable
+          onPress={() => {
+            feedback.tap();
+            onExit();
+          }}
+          style={[styles.pill, { backgroundColor: colors.surface }]}
+        >
           <Text style={[styles.pillText, { color: colors.accent }]}>‹ Levels</Text>
         </Pressable>
         <Text style={[styles.levelName, { color: colors.text }]}>
           {levelId}. {level.name}
         </Text>
-        <Pressable onPress={onSettings} style={[styles.pill, { backgroundColor: colors.surface }]}>
+        <Pressable
+          onPress={() => {
+            feedback.tap();
+            onSettings();
+          }}
+          style={[styles.pill, { backgroundColor: colors.surface }]}
+        >
           <Text style={[styles.pillText, { color: colors.accent }]}>⚙</Text>
         </Pressable>
       </View>
@@ -322,7 +403,21 @@ function PlayView({
 
       {/* Board */}
       <View style={styles.boardWrap}>
-        <Board engine={engine} colors={colors} pan={pan} hintDir={hintDir} />
+        {level.hint && showHint && (
+          <Pressable
+            onPress={() => {
+              feedback.tap();
+              setShowHint(false);
+            }}
+            style={[styles.hintBanner, { backgroundColor: colors.surface, borderColor: colors.paintEdge }]}
+          >
+            <Text style={[styles.hintBannerText, { color: colors.text }]}>💡 {level.hint}</Text>
+            <Text style={[styles.hintDismiss, { color: colors.subtext }]}>Tap to dismiss</Text>
+          </Pressable>
+        )}
+        <Animated.View style={{ transform: [{ scale: boardScale }] }}>
+          <Board engine={engine} colors={colors} pan={pan} hintDir={hintDir} />
+        </Animated.View>
       </View>
 
       <Text style={[styles.hintText, { color: colors.subtext }]}>
@@ -520,7 +615,10 @@ function ActionButton({
   return (
     <Pressable
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => {
+        feedback.tap();
+        onPress();
+      }}
       style={[
         styles.action,
         {
@@ -533,6 +631,59 @@ function ActionButton({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+/** Backdrop + card that springs/fades into view when an overlay mounts. */
+function OverlayCard({ colors, children }: { colors: Colors; children: ReactNode }) {
+  const appear = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.spring(appear, { toValue: 1, friction: 7, tension: 80, useNativeDriver: true }).start();
+  }, [appear]);
+  return (
+    <Animated.View style={[styles.overlay, { opacity: appear }]}>
+      <Animated.View
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.surface,
+            transform: [{ scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }],
+          },
+        ]}
+      >
+        {children}
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+/** Three stars that pop in one after another, earned ones gold. */
+function AnimatedStars({ stars, colors }: { stars: number; colors: Colors }) {
+  const vals = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    Animated.stagger(
+      150,
+      vals.map((v) => Animated.spring(v, { toValue: 1, friction: 4, useNativeDriver: true }))
+    ).start();
+  }, [vals]);
+  return (
+    <View style={styles.starRow}>
+      {[0, 1, 2].map((i) => (
+        <Animated.Text
+          key={i}
+          style={[
+            styles.bigStar,
+            {
+              color: i < stars ? "#f5c451" : colors.subtext,
+              opacity: vals[i],
+              transform: [{ scale: vals[i] }],
+            },
+          ]}
+        >
+          {i < stars ? "★" : "☆"}
+        </Animated.Text>
+      ))}
+    </View>
   );
 }
 
@@ -554,25 +705,20 @@ function WinOverlay({
   onMap: () => void;
 }) {
   return (
-    <View style={styles.overlay}>
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Level Complete!</Text>
-        <Text style={styles.bigStars}>
-          {"★".repeat(stars)}
-          <Text style={{ color: colors.subtext }}>{"☆".repeat(3 - stars)}</Text>
+    <OverlayCard colors={colors}>
+      <Text style={[styles.cardTitle, { color: colors.text }]}>Level Complete!</Text>
+      <AnimatedStars stars={stars} colors={colors} />
+      <Text style={[styles.cardCoins, { color: colors.accent }]}>+{coins} 🪙</Text>
+      {hasNext ? (
+        <ActionButton label="Next Level" onPress={onNext} colors={colors} highlight />
+      ) : (
+        <Text style={[styles.subtle, { color: colors.subtext }]}>
+          You painted every level — a true Path Painter!
         </Text>
-        <Text style={[styles.cardCoins, { color: colors.accent }]}>+{coins} 🪙</Text>
-        {hasNext ? (
-          <ActionButton label="Next Level" onPress={onNext} colors={colors} highlight />
-        ) : (
-          <Text style={[styles.subtle, { color: colors.subtext }]}>
-            You finished every level — more coming soon!
-          </Text>
-        )}
-        <ActionButton label="Replay" onPress={onReplay} colors={colors} />
-        <ActionButton label="Level Map" onPress={onMap} colors={colors} />
-      </View>
-    </View>
+      )}
+      <ActionButton label="Replay" onPress={onReplay} colors={colors} />
+      <ActionButton label="Level Map" onPress={onMap} colors={colors} />
+    </OverlayCard>
   );
 }
 
@@ -590,16 +736,15 @@ function LoseOverlay({
   onMap: () => void;
 }) {
   return (
-    <View style={styles.overlay}>
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Time's Up!</Text>
-        {canAddTime && (
-          <ActionButton label="+30s (watch ad)" onPress={onAddTime} colors={colors} highlight />
-        )}
-        <ActionButton label="Retry" onPress={onRetry} colors={colors} />
-        <ActionButton label="Level Map" onPress={onMap} colors={colors} />
-      </View>
-    </View>
+    <OverlayCard colors={colors}>
+      <Text style={[styles.cardTitle, { color: colors.text }]}>Time's Up!</Text>
+      <Text style={[styles.subtle, { color: colors.subtext }]}>So close — give it another go.</Text>
+      {canAddTime && (
+        <ActionButton label="+30s (watch ad)" onPress={onAddTime} colors={colors} highlight />
+      )}
+      <ActionButton label="Retry" onPress={onRetry} colors={colors} />
+      <ActionButton label="Level Map" onPress={onMap} colors={colors} />
+    </OverlayCard>
   );
 }
 
@@ -649,7 +794,7 @@ const styles = StyleSheet.create({
   mapButtons: { flexDirection: "row", gap: 10, marginTop: 4 },
   brand: { fontSize: 30, fontWeight: "800" },
   subtle: { fontSize: 14, textAlign: "center" },
-  pill: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
+  pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16, minHeight: 48, justifyContent: "center", alignItems: "center" },
   pillText: { fontWeight: "700" },
   mapScroll: { padding: 16, paddingBottom: 100, gap: 20 },
   chapterBlock: { gap: 10 },
@@ -680,14 +825,18 @@ const styles = StyleSheet.create({
   marker: { color: "#0b0c10", fontWeight: "900" },
   markerDark: { color: "#0b0c10", fontWeight: "900" },
 
+  hintBanner: { maxWidth: 360, marginBottom: 14, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 14, borderWidth: 1 },
+  hintBannerText: { fontSize: 14, fontWeight: "600", textAlign: "center", lineHeight: 20 },
+  hintDismiss: { fontSize: 11, textAlign: "center", marginTop: 4, textTransform: "uppercase", letterSpacing: 1 },
   hintText: { textAlign: "center", fontSize: 13, paddingHorizontal: 24 },
   actions: { flexDirection: "row", justifyContent: "center", gap: 12, padding: 16, paddingBottom: 24 },
-  action: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, minWidth: 92, alignItems: "center" },
+  action: { paddingHorizontal: 20, paddingVertical: 14, borderRadius: 14, minWidth: 92, minHeight: 52, alignItems: "center", justifyContent: "center" },
   actionText: { fontWeight: "700", fontSize: 15 },
 
   overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.75)", alignItems: "center", justifyContent: "center", padding: 24 },
   card: { width: "100%", maxWidth: 340, borderRadius: 24, padding: 28, gap: 14, alignItems: "center" },
   cardTitle: { fontSize: 24, fontWeight: "800" },
-  bigStars: { fontSize: 44, color: "#f5c451", letterSpacing: 4 },
+  starRow: { flexDirection: "row", gap: 8 },
+  bigStar: { fontSize: 52 },
   cardCoins: { fontSize: 20, fontWeight: "700" },
 });

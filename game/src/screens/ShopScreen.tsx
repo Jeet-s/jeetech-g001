@@ -3,6 +3,7 @@ import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
 import { iap, type ShopItem } from "../modules/iap";
 import { ads } from "../modules/ads";
 import { store } from "../modules/store";
+import { feedback } from "../modules/feedback";
 
 /**
  * Shop: Remove Ads, coin packs, a rewarded "free coins" offer, and Restore
@@ -29,13 +30,26 @@ export function ShopScreen({ visible, onClose }: { visible: boolean; onClose: ()
           <Text style={styles.coins}>Coins: {state.coins}</Text>
 
           {!state.adsRemoved && (
-            <Pressable style={styles.row} onPress={() => iap.purchase("remove_ads")}>
+            <Pressable
+              style={styles.row}
+              onPress={() => {
+                feedback.tap();
+                iap.purchase("remove_ads");
+              }}
+            >
               <Text style={styles.label}>Remove Ads</Text>
               <Text style={styles.price}>{removeAds?.price ?? "—"}</Text>
             </Pressable>
           )}
           {packs.map((p) => (
-            <Pressable key={p.sku} style={styles.row} onPress={() => iap.purchase(p.sku)}>
+            <Pressable
+              key={p.sku}
+              style={styles.row}
+              onPress={() => {
+                feedback.tap();
+                iap.purchase(p.sku);
+              }}
+            >
               <Text style={styles.label}>{p.title}</Text>
               <Text style={styles.price}>{p.price}</Text>
             </Pressable>
@@ -43,17 +57,31 @@ export function ShopScreen({ visible, onClose }: { visible: boolean; onClose: ()
           {ads.rewardedAvailable() && (
             <Pressable
               style={styles.row}
-              onPress={() => ads.showRewarded(() => store.set({ coins: store.get().coins + 50 }))}
+              onPress={() => {
+                feedback.tap();
+                ads.showRewarded(() => store.set({ coins: store.get().coins + 50 }));
+              }}
             >
               <Text style={styles.label}>Watch an ad for 50 coins</Text>
               <Text style={styles.price}>Free</Text>
             </Pressable>
           )}
 
-          <Pressable onPress={() => iap.restore()}>
+          <Pressable
+            onPress={() => {
+              feedback.tap();
+              iap.restore();
+            }}
+          >
             <Text style={styles.link}>Restore purchases</Text>
           </Pressable>
-          <Pressable style={styles.close} onPress={onClose}>
+          <Pressable
+            style={styles.close}
+            onPress={() => {
+              feedback.tap();
+              onClose();
+            }}
+          >
             <Text style={styles.label}>Close</Text>
           </Pressable>
         </View>

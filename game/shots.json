@@ -1,0 +1,10 @@
+{
+  "_note": "Store screenshot scenes. Each id is opened with <scheme>://shot/<id> and captured on an emulator, rendering a REAL game state (see src/screenshots.tsx).",
+  "scenes": [
+    { "id": "solve", "caption": "Swipe to paint the maze" },
+    { "id": "gates", "caption": "Unlock gates in order" },
+    { "id": "win", "caption": "Earn three bright stars" },
+    { "id": "map", "caption": "Dozens of handcrafted levels" },
+    { "id": "master", "caption": "Conquer tricky master mazes" }
+  ]
+}

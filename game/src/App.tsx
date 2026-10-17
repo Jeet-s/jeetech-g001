@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Linking } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { GameScreen } from "./screens/GameScreen";
@@ -8,6 +8,7 @@ import { analytics } from "./modules/analytics";
 import { ads } from "./modules/ads";
 import { iap } from "./modules/iap";
 import { store } from "./modules/store";
+import { ScreenshotScene } from "./screenshots";
 
 /**
  * Root of the base runtime. Boot order matters: player state → consent + ads
@@ -15,6 +16,20 @@ import { store } from "./modules/store";
  * keeps this boot sequence and the banner slot.
  */
 export default function App() {
+  // Screenshot mode (<scheme>://shot/<id>): render a store-screenshot scene
+  // without ads or billing. undefined = still checking the launch URL.
+  const [shot, setShot] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    Linking.getInitialURL()
+      .then((u) => setShot(u?.match(/shot\/([\w-]+)/)?.[1] ?? null))
+      .catch(() => setShot(null));
+  }, []);
+  if (shot === undefined) return <View style={styles.root} />;
+  if (shot) return <ScreenshotScene id={shot} />;
+  return <Game />;
+}
+
+function Game() {
   const [booted, setBooted] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
 
