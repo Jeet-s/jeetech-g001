@@ -1,4 +1,4 @@
-# Path Painter - paint puzzle
+# Path Painter - Paint Puzzle
 
 Relaxing paint puzzle with maze painting logic and quick swipe play.
 
