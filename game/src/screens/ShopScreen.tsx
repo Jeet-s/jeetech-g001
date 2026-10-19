@@ -1,103 +1,125 @@
-import { useEffect, useState } from "react";
-import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Modal, View, StyleSheet, Image } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { iap, type ShopItem } from "../modules/iap";
 import { ads } from "../modules/ads";
 import { store } from "../modules/store";
-import { feedback } from "../modules/feedback";
+import { makeColors } from "../game/theme";
+import { art } from "../art";
+import { Txt } from "../ui/Txt";
+import { PressableScale } from "../ui/PressableScale";
+import { useBottomInset } from "../modules/layout";
 
 /**
  * Shop: Remove Ads, coin packs, a rewarded "free coins" offer, and Restore
- * purchases (required so remove_ads survives reinstalls). The builder restyles
- * it per the GDD but keeps all four actions.
+ * purchases (required so remove_ads survives reinstalls). All four actions are
+ * always available; prices come from Google Play via iap.items().
  */
 export function ShopScreen({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  return (
+    // A Modal lives in its own native window the root SafeAreaProvider can't
+    // reach, so we mount a fresh provider here to measure the real gesture-bar
+    // inset and keep the Close button above the pill (QA: layout_small).
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <SafeAreaProvider>
+        <ShopSheet visible={visible} onClose={onClose} />
+      </SafeAreaProvider>
+    </Modal>
+  );
+}
+
+function ShopSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const [state, setState] = useState(store.get());
   const [items, setItems] = useState<ShopItem[]>(iap.items());
-
   useEffect(() => store.subscribe(setState), []);
   useEffect(() => {
     if (visible) setItems(iap.items());
   }, [visible]);
 
+  const colors = useMemo(() => makeColors(state.settings.palette, state.settings.highContrast), [state.settings.palette, state.settings.highContrast]);
   const removeAds = items.find((i) => i.sku === "remove_ads");
   const packs = items.filter((i) => i.sku !== "remove_ads");
+  // Keep the Close button above the Android gesture pill on edge-to-edge phones.
+  const bottomInset = useBottomInset(22, { modal: true });
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <Text style={styles.title}>Shop</Text>
-          <Text style={styles.coins}>Coins: {state.coins}</Text>
+        <View style={[styles.sheet, { backgroundColor: colors.surface, paddingBottom: bottomInset }]}>
+          <Image source={art.sprite_color_well} style={styles.art} resizeMode="contain" />
+          <Txt weight="display" size={26} color={colors.text}>Shop</Txt>
+          <View style={[styles.coinsPill, { backgroundColor: colors.bg }]}>
+            <Txt weight="black" size={16} color={colors.accent}>🪙 {state.coins}</Txt>
+          </View>
 
-          {!state.adsRemoved && (
-            <Pressable
-              style={styles.row}
-              onPress={() => {
-                feedback.tap();
-                iap.purchase("remove_ads");
-              }}
-            >
-              <Text style={styles.label}>Remove Ads</Text>
-              <Text style={styles.price}>{removeAds?.price ?? "—"}</Text>
-            </Pressable>
+          {!state.adsRemoved && removeAds && (
+            <ShopRow
+              title="Remove Ads"
+              subtitle="Remove all banner & interstitial ads forever"
+              price={removeAds.price}
+              colors={colors}
+              feature
+              onPress={() => iap.purchase("remove_ads")}
+            />
           )}
           {packs.map((p) => (
-            <Pressable
-              key={p.sku}
-              style={styles.row}
-              onPress={() => {
-                feedback.tap();
-                iap.purchase(p.sku);
-              }}
-            >
-              <Text style={styles.label}>{p.title}</Text>
-              <Text style={styles.price}>{p.price}</Text>
-            </Pressable>
+            <ShopRow key={p.sku} title={p.title} price={p.price} colors={colors} onPress={() => iap.purchase(p.sku)} />
           ))}
           {ads.rewardedAvailable() && (
-            <Pressable
-              style={styles.row}
-              onPress={() => {
-                feedback.tap();
-                ads.showRewarded(() => store.set({ coins: store.get().coins + 50 }));
-              }}
-            >
-              <Text style={styles.label}>Watch an ad for 50 coins</Text>
-              <Text style={styles.price}>Free</Text>
-            </Pressable>
+            <ShopRow
+              title="Watch an ad for 50 coins"
+              price="Free"
+              colors={colors}
+              onPress={() => ads.showRewarded(() => store.set({ coins: store.get().coins + 50 }))}
+            />
           )}
 
-          <Pressable
-            onPress={() => {
-              feedback.tap();
-              iap.restore();
-            }}
-          >
-            <Text style={styles.link}>Restore purchases</Text>
-          </Pressable>
-          <Pressable
-            style={styles.close}
-            onPress={() => {
-              feedback.tap();
-              onClose();
-            }}
-          >
-            <Text style={styles.label}>Close</Text>
-          </Pressable>
+          <PressableScale onPress={() => iap.restore()} style={styles.restore}>
+            <Txt weight="label" size={14} color={colors.subtext}>Restore purchases</Txt>
+          </PressableScale>
+          <PressableScale onPress={onClose} style={[styles.close, { backgroundColor: colors.paint }]}>
+            <Txt weight="display" size={16} color={colors.onPaint}>Close</Txt>
+          </PressableScale>
         </View>
       </View>
-    </Modal>
+  );
+}
+
+function ShopRow({
+  title,
+  subtitle,
+  price,
+  colors,
+  feature,
+  onPress,
+}: {
+  title: string;
+  subtitle?: string;
+  price: string;
+  colors: ReturnType<typeof makeColors>;
+  feature?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <PressableScale onPress={onPress} style={[styles.row, { backgroundColor: feature ? colors.paint : colors.bg }]}>
+      <View style={styles.rowText}>
+        <Txt weight="body" size={16} color={feature ? colors.onPaint : colors.text}>{title}</Txt>
+        {subtitle && <Txt weight="label" size={12} color={feature ? colors.onPaint : colors.subtext}>{subtitle}</Txt>}
+      </View>
+      <View style={[styles.priceTag, { backgroundColor: feature ? colors.onPaint : colors.surface }]}>
+        <Txt weight="black" size={14} color={feature ? colors.paint : colors.text}>{price}</Txt>
+      </View>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#151826", padding: 24, gap: 12, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  title: { color: "#e7e9f0", fontSize: 22, fontWeight: "700" },
-  coins: { color: "#f5c451", fontSize: 16 },
-  row: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#1f2336", padding: 16, borderRadius: 12 },
-  label: { color: "#e7e9f0", fontSize: 16 },
-  price: { color: "#6d8bff", fontSize: 16, fontWeight: "600" },
-  link: { color: "#8b90a6", textAlign: "center", paddingVertical: 8 },
-  close: { alignItems: "center", padding: 12 },
+  backdrop: { flex: 1, backgroundColor: "rgba(20,24,40,0.5)", justifyContent: "flex-end" },
+  sheet: { padding: 22, paddingBottom: 34, gap: 12, borderTopLeftRadius: 28, borderTopRightRadius: 28, alignItems: "stretch" },
+  art: { position: "absolute", right: 18, top: 14, width: 56, height: 56, opacity: 0.9 },
+  coinsPill: { alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 7, borderRadius: 14, marginBottom: 4 },
+  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderRadius: 18, gap: 12, minHeight: 56 },
+  rowText: { flex: 1, gap: 2 },
+  priceTag: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
+  restore: { alignItems: "center", paddingVertical: 10 },
+  close: { alignItems: "center", paddingVertical: 15, borderRadius: 18, marginTop: 2 },
 });

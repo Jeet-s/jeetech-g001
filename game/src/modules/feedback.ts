@@ -54,6 +54,10 @@ export const feedback = {
     buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
     play("move");
   },
+  /** The brush meeting a wall (end of a stroke, or a swipe straight into one). */
+  bump(): void {
+    buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft));
+  },
   /** A generic UI button / selection. */
   tap(): void {
     buzz(() => Haptics.selectionAsync());

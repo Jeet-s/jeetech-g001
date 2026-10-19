@@ -36,6 +36,20 @@ export interface LevelSpec {
   timeLimitSeconds: number;
   /** Short teaching tip shown on early / new-mechanic levels. */
   hint?: string;
+  /**
+   * A proven full-cover stroke sequence for this board (BFS-optimal). Replayed
+   * by scripts/validate.ts through the real engine to prove the level solvable
+   * and to measure its difficulty (stroke count + hazard weight).
+   */
+  solution?: Direction[];
+  /**
+   * Swipe budget a fair attempt is expected to fit in — the bot playtesters
+   * (src/game/sim.ts) count a run lost once it exceeds this. Tuned per level
+   * with scripts/tune-levels.ts to shape the difficulty curve. Not surfaced in
+   * the untimed UI (there you only ever earn fewer stars), so save data and the
+   * player experience are unaffected.
+   */
+  botBudget?: number;
 }
 
 export type Direction = "up" | "down" | "left" | "right";

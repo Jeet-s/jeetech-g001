@@ -4,6 +4,11 @@
   "coreMechanic": "Swipe to roll a brush through a maze; it paints every tile until it hits a wall. Paint switches to open matching gates, plan the order, and fill the whole board within the move/time target to earn stars.",
   "screens": ["Level Map", "Gameplay", "Settings", "Shop", "Level Complete", "Time's Up"],
   "monetization": { "rewardedAds": true, "interstitials": true, "removeAdsIap": true },
-  "analyticsEvents": ["level_start", "level_complete", "level_fail", "hint_used", "currency_spend", "settings_change"],
+  "analyticsEvents": ["level_start", "level_complete", "level_fail", "hint_used", "currency_spend", "settings_change", "tutorial_done"],
+  "storeListing": {
+    "shortDescription": "Paint puzzle mazes — swipe to roll a brush and fill every tile.",
+    "fullDescriptionLead": "Path Painter is a cozy paint puzzle: swipe to roll your brush through a maze, painting every tile until it hits a wall. Flip color switches to open matching gates, plan your route around crumble tiles, and fill the whole board to earn three bright stars.",
+    "keywords": ["paint puzzle", "maze", "color sequencing", "gate logic", "one-handed", "offline-friendly"]
+  },
   "_note": "Filled by the Claude Code builder from the GDD + asset manifest."
 }

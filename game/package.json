@@ -9,19 +9,25 @@
     "typecheck": "tsc --noEmit",
     "prebuild:android": "expo prebuild --platform android --no-install",
     "build:android": "cd android && ./gradlew bundleRelease",
-    "validate": "tsx scripts/validate.ts"
+    "validate": "tsx scripts/validate.ts",
+    "playtest": "tsx scripts/playtest.ts",
+    "levels": "tsx scripts/levels-report.ts"
   },
   "dependencies": {
+    "@expo-google-fonts/fredoka": "^0.4.1",
+    "@expo-google-fonts/nunito": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~58.0.14",
     "expo-audio": "~58.0.9",
     "expo-build-properties": "~58.0.11",
+    "expo-font": "~58.0.8",
     "expo-haptics": "~58.0.7",
     "expo-iap": "^6.1.0",
     "expo-status-bar": "~58.0.3",
     "react": "19.3.0",
     "react-native": "0.88.0",
-    "react-native-google-mobile-ads": "^17.3.0"
+    "react-native-google-mobile-ads": "^17.3.0",
+    "react-native-safe-area-context": "~5.10.1"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",

@@ -1,7 +1,18 @@
 import { View, StyleSheet } from "react-native";
 import { GameScreen, type ScreenshotConfig } from "./screens/GameScreen";
 import type { Direction } from "./game/PathEngine";
+import { levelById } from "./game/levels";
 import { store } from "./modules/store";
+
+/** First `frac` of a level's proven solution — a believable mid-solve state. */
+function partial(levelId: number, frac: number): Direction[] {
+  const sol = levelById(levelId)?.solution ?? [];
+  return sol.slice(0, Math.max(1, Math.floor(sol.length * frac)));
+}
+/** A level's full solution — drives the board to a completed win state. */
+function full(levelId: number): Direction[] {
+  return levelById(levelId)?.solution ?? [];
+}
 
 /**
  * Screenshot mode: the factory opens the app with <scheme>://shot/<id> on an
@@ -10,35 +21,27 @@ import { store } from "./modules/store";
  * progress and drive a few real swipes, never mock-ups. Ads/billing are off.
  */
 
-/** Optimal swipe sequence that fully fills an R-row horizontal snake. */
-function snakeSolution(rows: number): Direction[] {
-  const moves: Direction[] = ["right"];
-  for (let r = 1; r < rows; r++) {
-    moves.push("down");
-    moves.push(r % 2 === 1 ? "left" : "right");
-  }
-  return moves;
-}
-
 /** Seed believable progress so the map and HUD look lived-in. Idempotent. */
 function seedDemo(): void {
   const stars: Record<number, number> = {};
-  for (let id = 1; id <= 18; id++) stars[id] = 3;
-  for (let id = 19; id <= 21; id++) stars[id] = 2;
-  store.set({ coins: 1240, level: 22, stars });
+  for (let id = 1; id <= 24; id++) stars[id] = 3;
+  for (let id = 25; id <= 32; id++) stars[id] = 2;
+  store.set({ coins: 1240, level: 33, stars, tutorialDone: true });
 }
 
 const SCENES: Record<string, ScreenshotConfig> = {
-  // Progress map across the chapters.
-  map: { view: "map" },
-  // A color-sequencing level mid-solve: switches painted, gates still ahead.
-  solve: { view: "play", levelId: 16, moves: snakeSolution(5).slice(0, 4) },
-  // A triple-gate level showing the switch/gate iconography.
-  gates: { view: "play", levelId: 17, moves: snakeSolution(5).slice(0, 3) },
+  // The title screen: logo, the mascot painting its hero board, chapter progress, Play.
+  home: { view: "home" },
+  // Triple-gate maze mid-solve: creamy paint trail, switches painted, gates ahead.
+  solve: { view: "play", levelId: 16, moves: partial(16, 0.5) },
+  // A gate + crumble level showing the sprite iconography and hazards.
+  gates: { view: "play", levelId: 22, moves: partial(22, 0.45) },
   // The celebratory win screen with three stars over a completed board.
-  win: { view: "play", levelId: 6, moves: snakeSolution(5), showWin: true },
+  win: { view: "play", levelId: 14, moves: full(14), showWin: true },
+  // The chapter progress map.
+  map: { view: "map" },
   // A sprawling master maze part-painted.
-  master: { view: "play", levelId: 32, moves: snakeSolution(6).slice(0, 5) },
+  master: { view: "play", levelId: 36, moves: partial(36, 0.65) },
 };
 
 export function ScreenshotScene({ id }: { id: string }) {
@@ -51,4 +54,4 @@ export function ScreenshotScene({ id }: { id: string }) {
   );
 }
 
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: "#0b0c10" } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: "#E7EDF7" } });

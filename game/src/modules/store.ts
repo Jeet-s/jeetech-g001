@@ -20,6 +20,8 @@ export interface PlayerState {
   /** Best stars earned per level id (0..3). */
   stars: Record<number, number>;
   settings: Settings;
+  /** Whether the levels 1–2 tutorial has been completed (fires analytics once). */
+  tutorialDone: boolean;
 }
 
 const KEY = "player_state_v1";
@@ -37,6 +39,7 @@ let state: PlayerState = {
   level: 1,
   stars: {},
   settings: DEFAULT_SETTINGS,
+  tutorialDone: false,
 };
 
 const listeners = new Set<(s: PlayerState) => void>();

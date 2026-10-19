@@ -4,34 +4,34 @@
     "problems": [],
     "secondary": [
       "maze painting",
-      "swipe paint puzzle",
-      "color fill game"
+      "color fill game",
+      "swipe paint puzzle"
     ]
   },
-  "title": "Path Painter - Paint Puzzle",
+  "title": "Path Painter: Paint Puzzle",
   "category": "Puzzle",
   "keywords": [
     "paint puzzle",
     "paint puzzle game",
     "maze painting",
-    "swipe paint puzzle",
     "color fill game",
+    "swipe paint puzzle",
     "color fill games",
     "color fill games offline",
     "ball paint puzzle",
     "maze ball paint puzzle",
     "color fill 3d game"
   ],
-  "release_notes": "Launch build: 100+ handcrafted paint puzzles with gate sequencing, switches, one-way tiles, and crumble floors. Daily Puzzle, stars and chapters, coins for hints and undos, cosmetic brush and trail skins, high-contrast and colorblind modes, haptics, and offline-friendly play. Fair ads with Remove Ads option. Performance tuned for low-end devices.",
+  "release_notes": "Launch build: 60+ handcrafted levels, chapters with gates, switches, one-way tiles, crumble floors, daily puzzle, colorblind and high-contrast modes, haptics, optional timers, coins and cosmetics, rewarded hints/undos, Remove Ads IAP, and performance optimizations.",
   "content_rating": "Everyone",
-  "full_description": "Paint puzzle fans, meet Path Painter—a soothing swipe-to-paint challenge with smart gate logic and quick, satisfying levels. Glide your finger to coat every tile, unlock color-coded doors in sequence, and outthink switches, one-way paths, and crumble floors.\n\nHow it plays\nPlan your route, then swipe to leave a smooth, grid-snapped trail of paint. Fill required colors to trigger gates, tap switches to re-route, and keep your flow alive. Short stages make it perfect for a 1–3 minute break while still delivering meaningful strategy.\n\nWhat makes it special\n• Satisfying swipe feel: crisp haptics, soft brush sounds, and luscious paint trails\n• Gate sequencing: unlock doors in the right order for elegant solutions\n• Accessible by design: high-contrast mode, colorblind palettes, and pattern overlays\n• Optional pressure: chill zen play or tackle gentle timers for extra stars\n• Offline-friendly: play anywhere, no connection required\n\nFeatures you’ll enjoy\n• 100+ handcrafted stages at launch, with more in updates\n• Clear difficulty curve: learn basics, then master switches, bridges, one-way tiles, and crumble floors\n• Intuitive touch controls: swipe to paint, tap to toggle, hold to preview turns\n• Helpful tools: free 1-step undo, resets anytime, optional hints when you’re stuck\n• Daily Puzzle: a fresh handcrafted challenge to keep your streak going\n• Earn and spend coins for hints, extra undos, and cozy cosmetics (brush skins, trails, backgrounds)\n• Fair ads and light IAP: remove ads option and cosmetic bundles—no pay-to-win\n\nProgression and goals\nCollect stars by finishing levels efficiently—based on time, moves, and bonus tiles—and unlock new chapters on the world map. Hit milestones to earn boosters like Slow Time or Ghost Path previews. Cosmetic rewards let you personalize your brush and trail without affecting gameplay.\n\nAccessibility and polish\nEvery puzzle remains readable without relying on color alone thanks to pattern overlays on paint, gates, and sources. Haptic ticks and soft audio cues reinforce each move, while ambient music keeps the mood calm and focused.\n\nASO notes you care about\nIf you love maze painting challenges, this swipe paint puzzle blends relaxing flow with thoughtful planning. Prefer a color fill game you can enjoy offline? Path Painter is built for bite-sized sessions with depth that grows as you learn. Fans of color fill games will appreciate clean visuals, quick stages, and satisfying completion splashes.\n\nPlay now\nUnwind with a clean, cozy paint puzzle that respects your time and rewards your smarts. Swipe, sequence, and solve—your next perfect path is one move away.",
+  "full_description": "Paint puzzle fans will love Path Painter—a cozy, swipe-to-paint challenge where every move colors the board and unlocks smart gate logic. Glide your finger to create a continuous path, fill tiles, trigger switches, and sequence colors to open doors. Quick levels fit perfectly into your day, with optional timers for an extra kick and accessible palettes so everyone can enjoy.\n\nHow it plays\n• Swipe to paint: smooth, grid-snapped strokes that feel great\n• Unlock gates: fill the right colors or follow the shown order\n• Tap switches, cross one-way tiles, and plan around crumble floors\n• Beat goals like fill %, color order, and light time or move targets\n• Earn stars and coins to unlock chapters and stylish brush trails\n\nDesigned for clarity and flow\n• One-handed portrait play with simple touch controls\n• Undo and reset anytime; optional hints when you need a nudge\n• Colorblind-friendly palettes and patterned gates for readability\n• Haptics and soft audio for a satisfying, zen vibe\n\nContent and progression\n• 60+ handcrafted stages at launch, from calm to clever\n• Chapters introduce mechanics gradually—great for learning and mastery\n• Daily Puzzle delivers a fresh handcrafted challenge and streaks\n• Offline-friendly: enjoy most content without a connection\n\nChallenge that respects your time\n• Typical rounds last 30–90 seconds—perfect on the go\n• Adaptive help after several retries so you keep moving forward\n• Earn cosmetics with play; optional Remove Ads upgrade available\n\nWhy you’ll stay\n• Smart sequences turn simple coloring into strategic flow\n• Clean visuals make every completed board feel delightful\n• Quick restarts invite experimentation and satisfying solutions\n\nIf you enjoy a thoughtful color fill game with silky swipes and tidy logic, Path Painter is for you. Try the first chapter, master the maze painting routes, and color your way to a perfect board today!",
   "screenshots_plan": [
     "Swipe to paint paths",
     "Unlock gates in order",
     "Outsmart switches and arrows",
-    "Quick levels, chill or timed",
+    "Quick levels, optional timer",
     "Daily puzzle, cozy themes",
-    "Colorblind and high contrast"
+    "Accessible colorblind modes"
   ],
-  "short_description": "Relaxing paint puzzle with maze painting logic and quick swipe play."
+  "short_description": "Relaxing paint puzzle with maze painting and clever gate logic."
 }

@@ -1,0 +1,152 @@
+{
+  "style": "Premium minimalist puzzle aesthetic: crisp orthographic boards floating over soft gradient backdrops, with rounded 16–24px radii on tiles and gates. Materials feel tactile—velvety matte tiles and luscious semi-gloss paint that pools in micro-beveled grooves, catching a gentle top-front key light and a cool rim. Shadows are soft, 12–24px feather with subtle ambient occlusion at tile gaps; edges are clean and anti-aliased. Paint renders as a viscous ribbon with slight subsurface bloom, a thin darker edge, and faint ripple where the brush turns. Gates and switches use bold geometric iconography and embossed patterns for colorblind clarity. Overall mood is calm, cozy, and modern—pastel-forward but high-contrast, with tiny sparkles and dust motes used sparingly on unlocks; no harsh outlines, just confident shapes, soft speculars, and elegant UI micro-shadows.",
+  "palette": [
+    "#0B0C10",
+    "#5E6AD8",
+    "#2EC4B6",
+    "#FFD166",
+    "#FF6B6B",
+    "#F2F2F7"
+  ],
+  "ui_palette": {
+    "primary": "#5E6AD8",
+    "primaryDark": "#3E48A8",
+    "secondary": "#2EC4B6",
+    "secondaryDark": "#1C8F85",
+    "accent": "#FFD166",
+    "accentDark": "#C9A23F",
+    "bgTop": "#F2F2F7",
+    "bgBottom": "#E3E6F9",
+    "ink": "#0B0C10"
+  },
+  "assets": [
+    {
+      "id": "bg_paper_canvas",
+      "kind": "background",
+      "file": "bg_paper_canvas.png",
+      "usage": "World 1 background full-screen portrait",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "bg_wood_desk",
+      "kind": "background",
+      "file": "bg_wood_desk.png",
+      "usage": "World 2 background full-screen portrait",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "bg_canvas_studio",
+      "kind": "background",
+      "file": "bg_canvas_studio.png",
+      "usage": "World 3 background full-screen portrait",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "bg_pastel_gradient",
+      "kind": "background",
+      "file": "bg_pastel_gradient.png",
+      "usage": "World 4 background full-screen portrait",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "id": "sprite_board_tile",
+      "kind": "sprite",
+      "file": "sprite_board_tile.png",
+      "usage": "Core grid tile (idle/active visual handled via shader/animation)",
+      "width": 502,
+      "height": 512
+    },
+    {
+      "id": "sprite_paint_trail",
+      "kind": "sprite",
+      "file": "sprite_paint_trail.png",
+      "usage": "Continuous paint ribbon segments",
+      "width": 512,
+      "height": 453
+    },
+    {
+      "id": "sprite_gate",
+      "kind": "sprite",
+      "file": "sprite_gate.png",
+      "usage": "Lockable gate on grid edge or tile",
+      "width": 261,
+      "height": 512
+    },
+    {
+      "id": "sprite_switch_pad",
+      "kind": "sprite",
+      "file": "sprite_switch_pad.png",
+      "usage": "Toggle switch floor pad",
+      "width": 512,
+      "height": 469
+    },
+    {
+      "id": "sprite_key_pickup",
+      "kind": "sprite",
+      "file": "sprite_key_pickup.png",
+      "usage": "Collectible key",
+      "width": 288,
+      "height": 512
+    },
+    {
+      "id": "sprite_one_way_arrow",
+      "kind": "sprite",
+      "file": "sprite_one_way_arrow.png",
+      "usage": "One-way tile indicator",
+      "width": 506,
+      "height": 512
+    },
+    {
+      "id": "sprite_crumble_tile",
+      "kind": "sprite",
+      "file": "sprite_crumble_tile.png",
+      "usage": "Fragile tile variant",
+      "width": 494,
+      "height": 512
+    },
+    {
+      "id": "sprite_color_well",
+      "kind": "sprite",
+      "file": "sprite_color_well.png",
+      "usage": "Paint source",
+      "width": 498,
+      "height": 512
+    },
+    {
+      "id": "sprite_color_mixer",
+      "kind": "sprite",
+      "file": "sprite_color_mixer.png",
+      "usage": "Advanced level mixer node",
+      "width": 512,
+      "height": 288
+    },
+    {
+      "id": "character_brush_mascot",
+      "kind": "character",
+      "file": "character_brush_mascot.png",
+      "usage": "Cursor/mascot",
+      "width": 334,
+      "height": 512
+    },
+    {
+      "id": "ui_logo_emblem",
+      "kind": "ui",
+      "file": "ui_logo_emblem.png",
+      "usage": "App and title emblem",
+      "width": 493,
+      "height": 512
+    },
+    {
+      "id": "ui_reward_chest",
+      "kind": "ui",
+      "file": "ui_reward_chest.png",
+      "usage": "Rewards and shop highlight",
+      "width": 385,
+      "height": 512
+    }
+  ]
+}
