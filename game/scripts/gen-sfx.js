@@ -63,4 +63,15 @@ fs.writeFileSync(path.join(out, "fail.wav"), wav(concat(
   tone(300, 0.1, { decay: 10, gain: 0.4 }),
   tone(200, 0.25, { decay: 8, gain: 0.4 })
 )));
+// paint combo: a rising major-pentatonic ladder, one note per tile the brush paints
+[523, 587, 659, 784, 880, 1047, 1175, 1319].forEach((f, i) => {
+  fs.writeFileSync(path.join(out, `paint${i}.wav`), wav(tone([f, f * 2], 0.11, { decay: 24, gain: 0.26 })));
+});
+// a gate unlocking: bright two-note sparkle
+fs.writeFileSync(path.join(out, "unlock.wav"), wav(concat(
+  tone([880, 1320], 0.07, { decay: 18, gain: 0.35 }),
+  tone([1175, 1760], 0.16, { decay: 12, gain: 0.35 })
+)));
+// a star popping onto the results card
+fs.writeFileSync(path.join(out, "star.wav"), wav(tone([1047, 1568], 0.16, { decay: 14, gain: 0.32 })));
 console.log("wrote sfx:", fs.readdirSync(out));

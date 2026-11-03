@@ -1,10 +1,22 @@
+import { memo } from "react";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Canvas, Circle, BlurMask } from "@shopify/react-native-skia";
 import { palette } from "./theme";
 
-/** Full-screen brand gradient with soft bokeh light — the base of every screen. */
-export function Background({ colors, children }: { colors?: [string, string]; children?: React.ReactNode }) {
+type BackgroundProps = { colors?: [string, string]; children?: React.ReactNode };
+
+/**
+ * Full-screen brand gradient with soft bokeh light — the base of every screen. Memoised: it sits under the game
+ * screen, which re-renders on every move — an unmemoised blurred Skia canvas redrawn per tap is soak-ANR fuel.
+ * Keep BlurMask off boards and anything that animates; a static backdrop like this one is drawn once.
+ */
+export const Background = memo(
+  BackgroundCanvas,
+  (a: BackgroundProps, b: BackgroundProps) => a.colors?.[0] === b.colors?.[0] && a.colors?.[1] === b.colors?.[1] && a.children === b.children,
+);
+
+function BackgroundCanvas({ colors, children }: BackgroundProps) {
   const { width, height } = useWindowDimensions();
   const [top, bottom] = colors ?? [palette.bgTop, palette.bgBottom];
   return (

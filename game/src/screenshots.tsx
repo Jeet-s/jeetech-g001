@@ -32,16 +32,16 @@ function seedDemo(): void {
 const SCENES: Record<string, ScreenshotConfig> = {
   // The title screen: logo, the mascot painting its hero board, chapter progress, Play.
   home: { view: "home" },
-  // Triple-gate maze mid-solve: creamy paint trail, switches painted, gates ahead.
+  // A key-and-door room mid-solve: creamy paint trail, the key painted, its door open ahead.
   solve: { view: "play", levelId: 16, moves: partial(16, 0.5) },
-  // A gate + crumble level showing the sprite iconography and hazards.
+  // Two colours (Stacked Keys): keys A and B on one wall, their doors waiting — order matters.
   gates: { view: "play", levelId: 22, moves: partial(22, 0.45) },
   // The celebratory win screen with three stars over a completed board.
   win: { view: "play", levelId: 14, moves: full(14), showWin: true },
   // The chapter progress map.
   map: { view: "map" },
-  // A sprawling master maze part-painted.
-  master: { view: "play", levelId: 36, moves: partial(36, 0.65) },
+  // A master maze part-painted: all four colours (Four Locks).
+  master: { view: "play", levelId: 57, moves: partial(57, 0.65) },
 };
 
 export function ScreenshotScene({ id }: { id: string }) {

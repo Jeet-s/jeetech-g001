@@ -1,14 +1,30 @@
 // Extends app.json with the monetization plugins. The AdMob app id comes from
 // monetization.json (written per game by the factory from its Play slot).
 const monetization = require("./monetization.json");
+// iOS AdMob ids (App Store build only — Android keeps monetization.json).
+const monetizationIos = require("./monetization.ios.json");
 
 module.exports = ({ config }) => ({
   ...config,
+  // iPhone-only App Store build. Ignored by Android builds.
+  ios: {
+    ...config.ios,
+    supportsTablet: false,
+    infoPlist: {
+      ...(config.ios && config.ios.infoPlist),
+      // Only standard HTTPS (AdMob / StoreKit) — exempt from export compliance.
+      ITSAppUsesNonExemptEncryption: false,
+    },
+  },
   plugins: [
     [
       "react-native-google-mobile-ads",
       {
         androidAppId: monetization.admob.appId,
+        iosAppId: monetizationIos.admob.appId,
+        // Google's SKAdNetwork id (iOS attribution without the IDFA). No
+        // userTrackingUsageDescription: the app never shows the ATT prompt.
+        skAdNetworkItems: ["cstr6suwn9.skadnetwork"],
         // Consent (UMP) is gathered before the SDK starts serving.
         delayAppMeasurementInit: true,
       },

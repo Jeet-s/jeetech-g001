@@ -1,136 +1,132 @@
 # Path Painter — Level Plan
 
-**Path Painter** is a roller-maze puzzle. The player sits on a start tile and
-swipes; the brush rolls in that direction and **keeps going until a wall, a shut
-gate, or an already-used crumble tile stops it**, painting every tile it crosses.
-**Win when every paintable tile is covered.** One verb (swipe), discrete
-strokes, so undo/reset are trivial and every level is a pure planning puzzle —
-difficulty comes from *seeing the route*, never from reflexes or guessing.
+**Path Painter** is a roller-paint puzzle. The player sits on a start tile and swipes; the brush rolls in that direction and **keeps going until a wall, a shut gate or a spent crumble stops it** (turn pads bend the roll on the way), painting every tile it crosses. **Win when every paintable tile is covered.** One verb, discrete strokes — every level is a planning puzzle about *where the brush will stop*.
 
-Tile legend: `o` start · `.` floor · `#` wall · `A`–`D` switch · `a`–`d` gate
-(opened by its matching switch) · `*` crumble (one pass only).
+Tile legend: `o` start · `.` floor · `#` wall · `A`–`D` switch (key) · `a`–`d` gate (door, opened by its key; a shut door stops the brush like a wall) · `*` crumble / crack (one pass, then a hole that also stops the brush) · `>` `<` `^` `v` turn pad (a roll that enters it turns to the arrow; blocked that way = it stops on the pad; a brush resting on a pad leaves the way you swipe; pads work every time).
 
-## The core puzzle
+## Rules of play the levels are built on
 
-Because the brush only stops at walls, every board is a **maze of corridors and
-junctions**, not a single forced path. From the start and at every junction the
-player faces real choices (**branching ≥ 2 on every level**): roll one way and you
-may strand a corridor you can no longer reach cheaply. The skill is ordering your
-strokes so the whole maze is covered — and, once mechanics arrive, so every key
-is painted before its door and every one-pass crumble is spent on the right half
-of the board.
+- **No move limit and no fail state.** A level can always be finished; Undo and Reset are free and unlimited.
+- **Stars are tied to par**, and par is the BFS-optimal stroke count (the fewest swipes possible): **3★ at par, 2★ within par + 2, otherwise 1★** (`PathEngine.starsForMoves`).
+- **The clock** appears on two master levels only (L53, L58: 120 s for a 7-swipe par). Running out of time is the only way to fail a level, and those clocks are deliberately generous.
 
-## How the set is built
+## Design rules for the set
 
-36 levels across six chapters. Each chapter **introduces one mechanic on a small
-board (teach), practises it, twists it, then combines it with earlier mechanics
-and ends on a finale.** Every board was generated from a fixed seed and then
-curated: kept only if the solver proves it completable, it has genuine branching,
-its trap rate is fair (0 on the teaching levels — no first move is ever fatal —
-and modest later), and its `botBudget` could be tuned to the target win-rate
-curve. Each level stores its proven optimal solution; `npm run validate` replays
-it on the real engine to prove completability and measure difficulty, `npm run
-playtest` checks the human-like win-rate curve, and `npm run levels` prints each
-board, its intent and the solver facts (optimal moves, branching, trap rate) for
-the level-design review.
+- **60 levels, 6 chapters × 10** (chapter N = levels 10(N-1)+1 … 10N, one gallery piece per level).
+- Each chapter: **teach** the mechanic alone on a small board → **practise** → **twist** → **combine** with earlier mechanics → a deliberate **breather** (small, ≥ 80 % casual) → **finale** (the chapter's set-piece: a bigger, distinct shape that combines the chapter's ideas).
+- **No single-path snakes.** Every board has real junctions, loops, rooms or stubs; branching ≥ 2 at the start everywhere, and wrong starts are *visibly* worse (they cost 1-3 strokes). Very few empty repositioning strokes.
+- **Fair:** no first move ever makes a level unwinnable (true trap rate 0 on all 60, and the report's trap rate is 0 at every level's bot budget). Late levels are picked so the skilled bot beats the casual bot clearly (planning pays, not guessing).
+- Signature ideas, used in new combinations: **the shut door as a wall**, **the spent crack as a wall**, **the pad as a stop / U-turn / bend**, **the key-and-door chute** (one roll paints a key and passes its door), **chained keys**, **design the irreversible tile out of your route** (cracks crossed exactly once, at the right time).
+- Boards are sized to their puzzle (10-12 tiles for a breather, 30-44 for a finale).
+- Every level stores its BFS-optimal solution (= par); `npm run validate` replays it on the real engine; `botBudget` is tuned with `scripts/tune-levels.ts` (same bots and seeds as `npm run playtest`).
 
-### Difficulty curve
+### Difficulty curve (bot playtest, casual first-try win rate)
 
-Boards grow from 3×3 corridors to 9×9 mazes; gates and crumbles add planning
-weight. Measured difficulty (solver strokes + a weight per hazard) rises from a
-~4 average in the early third to ~24 in the last third — comfortably the ≥3×
-rise `validate` requires. Casual bot win rate falls smoothly from ~0.88 to ~0.40
-while skilled stays ≥0.68 everywhere (no walls), so the curve is hard-but-fair.
+Levels 1-3 ≥ 90 %; the curve then falls with a lift at each chapter's teach level and breather and a dip at each finale: middle third averages ~74 %, last third ~64 % casual / ~84 % skilled. No more than two easy (≥ 90 %) levels in a row after level 5, no spikes, no walls. Measured difficulty (`npm run validate`: optimal strokes + 3 per hazard/pad tile + 3 per planning event, ×1.2 per mechanic family in play) rises from ~4 to ~85.
 
----
 
-## Chapter 1 · Basics — *teach the roller*  (L1–6)
+## Chapter 1 · Basics — *teach the roller*  (L1–10)
 
-Mechanic: **the swipe**. No hazards. Small mazes so the only thing to learn is
-that the brush rolls to a wall and that junctions mean choices.
+**The swipe.** No hazards. Small shaped boards — a corridor pair, a ring with a spur, a staircase, a loop with a cap and tail, prongs, a hook, a crossroads, an arch, two wings and a 32-tile grand tour — so the things to learn are that the brush stops only at walls, that a nook is painted only when the brush stops beside it, and that the biggest-looking roll is often wrong. Teach (L1-2) → practise (L3-4) → twist (L5, *go up first*) → breather (L6) → practise (L7-9) → finale (L10). From L3 on, wrong first swipes cost 2 strokes on most boards (a visibly stranded tile), never the level.
 
-| # | Name | Role | Intent / aha |
-|---|------|------|--------------|
-| 1 | First Roll | teach | One swipe rolls to the wall and paints the whole corridor — think in strokes, not steps. |
-| 2 | Two Ways | teach | Two branches leave the start; cover both, but order them so neither is stranded. |
-| 3 | Around the Bend | practise | Taller fork maze: "roll till it stops, then turn." |
-| 4 | Dead Ends | practise | Dead-end stubs are painted by rolling in and back out — budget a there-and-back for each. |
-| 5 | The Fork | twist | A symmetric fork: only one first move lets you sweep the rest in one chain; the mirror wastes a stroke. |
-| 6 | Full Cover | finale | A loopy multi-junction maze — "roll, stop, turn" planning must be automatic. |
+| # | Name | Role | Par | Intent / aha |
+|---|------|------|-----|--------------|
+| 1 | First Roll | Teach | 4 | Teach. The one verb: a swipe rolls the brush until a wall stops it, painting every tile it crosses. Two dead-end columns joined by a bottom corridor. Aha: one swipe paints a whole corridor — up first, back down, then sweep the base and climb the right column (4). Down first just costs an extra swipe. |
+| 2 | Two Ways | Teach | 4 | Teach (first choice). A 3x3 ring round a pillar with a one-tile spur under the start. Aha: the spur is a dead end, so make it the finish — roll right first and the ring ends by dropping straight into the spur (4); rolling up or down first leaves the spur for a 5th swipe. |
+| 3 | Staircase | Practise | 6 | Practise (staircase). A diagonal staircase of short steps; the brush can only stop where a step turns. Aha: climb first and work down from the top — up, west, up into the top step, then down and east along the third row, finishing with the drop to the bottom step (6). Going east first leaves the top steps behind and costs 2 swipes. |
+| 4 | Side Loop | Practise | 6 | Practise (cap, loop and tail). A four-tile loop hangs under the start row, with a two-tile cap above the start and a one-tile tail on the west. Aha: the biggest-looking roll is wrong — go up into the cap first, run round the loop clockwise, and the climb of its west side stops right beside the tail, which is the last tile (6). Starting east or west strands the cap or the tail and costs 2 swipes. |
+| 5 | The Fork | Twist | 5 | Twist. Three prongs hang off a bottom bar, start in the middle; the top-left corner links the left and middle prongs. Aha: go UP the middle prong first — then one chain sweeps west, down, across and up the east prong (5). The obvious sideways start wastes 1-2 swipes. |
+| 6 | Hook | Breather | 5 | Breather after the twist: a hook — a 3-wide arch over a long floor, the start in the arch's short east leg. Aha: drop down the leg first, climb back, and the arch, the west leg and the floor follow in three long rolls (5). Up first costs a swipe. |
+| 7 | Crossroads | Practise | 8 | Practise (crossroads). A plus-shaped board: a small ring on top, a long south arm and a short east stub off a two-row middle. Aha: east first — the wall east of the middle row stops you right on the south arm's column, so the arm is ridden down and back up into the ring; the ring's west column drops you into the bottom row for the last sweep, which ends by climbing the east stub (8). Down first costs 2 swipes. |
+| 8 | Arch | Practise | 7 | Practise (arch over a floor). An arch rises from a two-row floor; a one-tile nook sits above the floor's west end. Aha: step up first — the upper floor row ends at the arch's west leg, which carries you over the arch and down its east leg to the bottom row; one long roll west then ends under the nook (7). Rolling west first costs 2. |
+| 9 | Two Wings | Practise | 8 | Practise (two wings). A 2-wide west tower and a 2x2 east wing hang off a two-row floor. Aha: drop first and ride row 4 all the way east; the east wing is cleared with four short rolls that end in the floor's south-east corner, and the long roll west sets up the final climb of the tower's second lane (8). East first costs 2 swipes. |
+| 10 | Grand Tour | Finale | 10 | Finale (Basics). The chapter's biggest board (32 tiles): a top corridor and an east shaft wrap a two-row cellar, linked by the long west column. Aha: go west along the start row first — then the corridor, the shaft and the cellar's upper row chain together, the west column is climbed once to close the corner, and the cellar's lower row is saved for last, ending with a hop up into the notch beside the shaft (10). Up first wastes 2 swipes. |
 
-## Chapter 2 · Switches & Gates — *one lock at a time*  (L7–12)
+## Chapter 2 · Switches & Gates — *one lock at a time*  (L11–20)
 
-Mechanic: **switch → gate**. A round switch opens its square gate. Now the maze
-has a locked corridor, so the key must be planned into the route.
+**Switch → gate.** Painting a round key opens every door of its colour. Teach the rule (L11) → a door that opens mid-roll (L12) → a key in a far corner (L13) → fetch-and-return from a dead-end shaft (L14) → twist: *a shut door is a wall you can stop on* (L15) → breather (L16) → one key, two doors (L17) → combine: key on the way down, door on the way up (L18), a door as stop *and* path (L19) → finale: a 32-tile hall where the corridor roll paints the key and passes its door in one stroke (L20).
 
-| # | Name | Role | Intent / aha |
-|---|------|------|--------------|
-| 7 | First Key | teach | Paint the switch, roll through the opened gate — the rule, alone. |
-| 8 | Locked In | practise | Key down a side branch — detour for it before the locked corridor is an option. |
-| 9 | Key & Door | practise | The door blocks a corridor you need; fetch its off-to-the-side key first. |
-| 10 | Detour | practise | Key and door on opposite sides of a loop — hold the lock in mind over the long way round. |
-| 11 | Far Door | twist | Switch and gate side by side at a dead end — painting the key turns the wall beside it into your exit. |
-| 12 | Gatekeeper | finale | A full-size single-gate maze — sequence the key into a longer route without hesitating. |
+| # | Name | Role | Par | Intent / aha |
+|---|------|------|-----|--------------|
+| 11 | First Key | Teach | 6 | Teach (switch & gate). Key A sits in the bottom corridor's west arm; its door a is the bottom-east corner tile. Aha: a door is a wall until its key is painted — swing west through A first, and only then can the brush roll east onto the door and up the east column (6). |
+| 12 | Through the Door | Practise | 7 | Practise (a door opens mid-roll). Key A and door a sit side by side in the floor row, the key east of its door. Aha: the floor is entered from the east shaft, so the roll west paints A and passes a in the same stroke — the door opens under the brush; the middle column then climbs back into the top room (7). Rolling east first or up costs a swipe. |
+| 13 | Corner Key | Practise | 8 | Practise (key in the far corner). Key A is the west end of row 2, with nothing near it to stop on; door a is the corner above it. Aha: clear the 2-wide east shaft first (down, east, up); then the shut door stops the top-row roll one tile short, you drop to row 2, sweep it east and back west into the key, and the last step up passes the door (8). Wrong starts cost a swipe. |
+| 14 | Deep Key | Practise | 7 | Practise (fetch and return). Key A sits at the bottom of a dead-end shaft under the room's east side; door a is the west end of the room's bottom row. Aha: of four plausible starts one is best — sweep the start row west and back, dive the shaft for A, climb to the top row, and the open door lets the west wall carry you into the bottom row for the last sweep (7). Wrong starts cost 1-3 swipes. |
+| 15 | Door as Wall | Twist | 7 | Twist: a shut door is also a wall. The middle row has no wall to stop on — except door a, which pins the brush on row 2 when you roll down the east column while it is still shut. Aha: use the door as a stop, paint key A along row 2, then the same door lets you down to the south-east (7). Without the shut door the board is impossible. |
+| 16 | Pillar Room | Breather | 6 | Breather: a 14-tile room around a pillar, door a in the south-east corner, key A just north of it. Aha: the first roll east stops on the shut door — exactly under the key's column — so the climb paints A, and the loop round the pillar ends through the open door (6). |
+| 17 | Twin Doors | Practise | 8 | Practise (one key, two doors). Twin a-doors close both top corners; key A sits right under the east one. Aha: climb the middle column first — the shut west door stops the top-row roll one tile short of the corner, so you can drop down column 2 and step across to the key's column; that climb paints A and passes the east door, and the same key has opened the west door for the final drop down the west wall (8). |
+| 18 | Underpass | Combine | 8 | Combine (key on the way down, door on the way up). Key A is directly below the start; door a seals the east column of a U-shaped underpass. Aha: drop through A first, ride the underpass round, and climb the east column through the now-open door into the top room, which is swept west and back (8). The obvious east first costs 2 swipes. |
+| 19 | Double Stop | Combine | 7 | Combine (a door as a stop, then as a path). Two a-doors: one ends the top row, the other sits just west of the start; key A is the west end of row 2. Aha: the shut top door is the only thing that stops a climb of the east column on row 2 — use it, sweep row 2 west through the key, and both doors open: step down through the start-row door, climb, run the top row through the other door and finish in the south-east tail (7). Up first costs 2 swipes. |
+| 20 | Keyhole Hall | Finale | 11 | Finale (Switches & Gates). A 32-tile set-piece: a top corridor over a central hall and a U-shaped cellar, with two a-doors (the corridor's east end and the west column under it) and key A mid-corridor. Aha: climb the stub to the corridor; the long roll east paints A and passes the corner door in one stroke; the west door then links the corridor to the hall, and the cellar U is ridden last (11). All four starts are playable (three optimal, east costs 1) — the challenge is the order, not a guess. |
 
-## Chapter 3 · Color Sequencing — *several ordered locks*  (L13–18)
+## Chapter 3 · Color Sequencing — *several ordered locks*  (L21–30)
 
-Mechanic: **multiple colours**, each an independent lock. The twist is ordering:
-plan a route that paints each colour's switch before you need its corridor.
+**Two to three colours**, each an independent lock, so the puzzle becomes *order*. Teach (L21) → stacked keys on one wall (L22) → the sideways chute: key and door side by side in one roll (L23) → twist: the third colour on a small board (L24) → combine with door-as-wall (L25) → breather (L26) → chained keys (L27) → a three-door hall (L28) → combine (L29) → finale: one ordered chain C → c → B → b → A → a (L30).
 
-| # | Name | Role | Intent / aha |
-|---|------|------|--------------|
-| 13 | Two Colours | teach | Two independent locks — paint both keys before you need either door. |
-| 14 | Order Up | practise | Two keys off the main loop — order the detours so neither door blocks you later. |
-| 15 | Twin Keys | practise | Keys at opposite ends — grab both on the way out so the doors are open on the sweep back. |
-| 16 | Three Doors | twist | Three scattered keys — one route must open each colour's switch before its corridor. |
-| 17 | Tangle | combine | Three locks threaded through a crossing maze — route so every switch precedes its door. |
-| 18 | Lockwork | finale | Three locks on the chapter's biggest board — master the multi-key order. |
+| # | Name | Role | Par | Intent / aha |
+|---|------|------|-----|--------------|
+| 21 | Two Colours | Teach | 8 | Teach (two colours). Two independent locks stacked in the west column (a above b); both keys sit together at the top of the east dead-end column. Aha: each key opens only its own door — fetch both keys, climb back out of the dead end, and drop down to roll up through b and a in one stroke (8). |
+| 22 | Stacked Keys | Practise | 9 | Practise (two colours on one wall). Keys B and A are stacked in the west column; door a ends the middle row in the east, door b caps the short column up to the top corridor. Aha: hop up one row, sweep it west to paint A and straight back east through a; the bottom row returns you west, the climb paints B, and one step east lines you up under b for the top corridor (9). Two of three starts cost 1-2 swipes. |
+| 23 | Side Chute | Practise | 9 | Practise (the sideways chute). Key B is right above the start; key A and door a end the same row in the east, side by side. Aha: up first paints B, and one roll east then paints A and passes a in the same stroke; the west room is swept, door b in the top row opens the east column, and the bottom row finishes the job (9). The other starts cost a swipe. |
+| 24 | Three Colours | Twist | 9 | Twist (three colours) on a small board. Keys B and A sit beside the start; door c stops you right next to them. Aha: B and A first (two one-tile rolls), then the south loop through b, and the east column climbs through a straight into key C, which opens c on the way back (9). Only west first is optimal. |
+| 25 | Locked Stops | Combine | 9 | Combine (door-as-wall + two colours). The east tower climbs through key B to door a. Aha: shut door a pins the brush in the tower so B is painted on the way up; then sweep the south pocket through key A and the now-open b, climb the tower's other lane and finish through a (9). Two of three starts cost 1-2 swipes. |
+| 26 | Small Change | Breather | 6 | Breather (10 tiles). Keys A and B sit beside the start; doors b and a close the two corners. Aha: the first step paints A and stops on shut b; dropping down column 2 paints B, and both doors are then one-tile hops in a tidy loop that ends down the east tail (6). |
+| 27 | Key Behind a Door | Practise | 10 | Practise (chained keys). Only two starts. Key A opens door a, which leads to the west branch where key B waits; B opens door b at the top. Aha: the chain A → a → B → b is forced, and the shut door b is the stop that parks you on A's column (10). |
+| 28 | Three Doors | Practise | 10 | Practise (three colours, roomy). A two-row hall over a west annex: keys A and C stacked by the west wall, key B in the annex, door c beside C, door b at the annex's foot, door a at the hall's east end. Aha: sweep the hall east and west, then the drop down the west wall paints A and C and stops on shut b; c, B, the west column through b, and the final climb runs the top row east through a (10). |
+| 29 | Chimney | Combine | 11 | Combine. Three colours; door b (bottom-left corner) is used twice as a wall before it opens, and the chimney above is reached from the bottom row. Aha: C beside the start opens c, the way east to A; after A, one roll west paints B and passes a; the final drop down the west column passes b (11). |
+| 30 | Lockwork | Finale | 12 | Finale (Color Sequencing). One ordered chain: C → c → B → b → A → a. Door a is the first wall you stop on and the last tile you paint; every shut door is used as a stop before it opens (12). Up first is the only optimal start. |
 
-## Chapter 4 · Crumble Hazards — *one-use floor*  (L19–24)
+## Chapter 4 · Crumble Hazards — *one-use floor*  (L31–40)
 
-Mechanic: **crumble tiles** — one pass, then gone. Crossing one cuts the maze,
-so it must be spent at the right moment; combined with gates, both constraints
-sit on the same route.
+**Cracks** take one pass, then become holes. Teach: cross last (L31) → a crack you must cross *mid-route* (L32) → twist: *a spent crack stops the brush like a wall* (L33) → first combine with one key (L34) → crack both early (L35) → breather: the crack is simply the last tile (L36) → two colours + a crack (L37) → crack + door (L38) → crumble keys (L39) → finale: a 33-tile vault with cracks in opposite corners, every first move recoverable (L40).
 
-| # | Name | Role | Intent / aha |
-|---|------|------|--------------|
-| 19 | First Cracks | teach | A crumble cuts the maze in two — cross it only when you'll never need to return. |
-| 20 | One Pass | combine | A crumble and a gate on the same route — sequence so neither traps you. |
-| 21 | Brittle | practise | Two crumbles pinch the only loop — choose which to spend first. |
-| 22 | Lock & Crack | combine | The crumble sits on a shortcut you'd want twice — use it once, for the right half. |
-| 23 | Fragile Keys | combine | One gate, two crumbles — cross each fragile tile on the way to a key, not wastefully. |
-| 24 | Crumble Vault | finale | Two gates, two crumbles — some first moves already doom the board; read the route first. |
+| # | Name | Role | Par | Intent / aha |
+|---|------|------|-----|--------------|
+| 31 | First Cracks | Teach | 9 | Teach (crumble). Two cracked tiles guard the only way into the east column. A cracked tile takes one pass, then it is a hole. Aha: crossing a crack cuts the board, so clear the whole west side first and cross both cracks on the last two strokes (9). |
+| 32 | Crack in the Column | Practise | 8 | Practise (cross mid-route). The crack sits in the east column — the only link between the top room and the bottom loop. Aha: unlike L31 you cannot save it for last: ride the east column down through it early, then return up the loop's west column, which never needs the crack again (8). All three starts work; down first is cleanest. |
+| 33 | Broken Wall | Twist | 8 | Twist: a spent crack is a hole the brush stops in front of, like a wall. This board has no other stops on row 2 or column 3. Aha: crack the corner tile first — afterwards rolling up the east column halts on row 2 and rolling along row 1 halts on column 3 (8). Without the crack the board is impossible. |
+| 34 | Crack to the Key | Combine | 9 | Combine (first crack + one key). A 20-tile room: key A in the third row, door a over the east column, the crack in the bottom-left corner. Aha: sweep the start row and the east column, then the third row paints A; the drop onto the crack parks you in the bottom row, which carries you to the column under door a — climb through it and drop back to the tail (9). |
+| 35 | Two Cracks | Practise | 10 | Practise. Two cracks: one on the top row between the two-lane west room and the link column, one at the foot of the link column. Aha: crack both EARLY — each spent crack is the wall that stops you on the lane you still need (10), the reverse of saving them for last. |
+| 36 | Last Crack | Breather | 5 | Breather (12 tiles). A 3x4 room with a crack in the north-east corner. Aha: the crack is simply the last tile — climb, run the west column down and the floor east, and the final climb of the east column ends on the crack (5). This time the crack is never a stop; it just has to come last. |
+| 37 | Lock & Crack | Combine | 10 | Combine (two colours + a crack). Key A is on the start row, key B in the north-east corner; door b and a crack stack under B in the east column, door a under A. Aha: one roll east paints A, the corner step paints B, the drop through b spends the crack (so the east column is used exactly once), and the climb through a returns you to the top row for the west loop and the south tail (10). |
+| 38 | Fragile Row | Combine | 8 | Combine (crack + door). Key A in row 3, the crack in the north-west corner, door a in the top row just east of it. Aha: paint A on the long roll west, then climb the west column onto the crack — the only stroke that spends it; the top row then runs through a, and the east shaft, the floor and the second column finish (8). |
+| 39 | Crumble Keys | Combine | 10 | Combine. A rectangular ring with key B and door a side by side in the top row, key A on the bottom row and door b in the bottom-left corner; one crack in the north-east corner. Aha: crack the corner first — later one roll west-to-east along the top paints B, passes a and stops on that hole; door b is the very last tile (10). |
+| 40 | Crumble Vault | Finale | 11 | Finale (Crumble). A 33-tile vault: a west room and an east corridor joined by the top row and the floor, cracks in opposite corners (north-west, south-east), key B on the west wall, key A on row 5, doors a (top row) and b (east corridor). Aha: shut a stops the top-row roll so the room's middle column can be swept; the floor roll east ends on the south-east crack, shut b parks you on row 5 for A, and the climb of the west wall paints B and spends the north-west crack in one stroke — then the top row passes a and the corridor's drop through b ends against the spent crack (11). No first move is fatal. |
 
-## Chapter 5 · Timed Trials — *everything, against a clock*  (L25–30)
+## Chapter 5 · Turn Pads — *arrows that bend the roll*  (L41–50)
 
-Mechanic: **the timer**. Mixed boards, but you must plan the whole route up
-front and execute without hesitating.
+**Turn pads** (`>` `<` `^` `v`): a brush that rolls onto a pad turns to its arrow and keeps rolling; if that way is blocked it stops on the pad; a brush resting on a pad leaves the way you swipe. Teach on a ring whose pocket row's only entrance is a pad (L41) → a pad mid-row that bends every crossing roll (L42) → twist: a pad aimed at a wall is a *stop* (L43) → twist: a pad aimed back the way you came is a *U-turn* (L44) → combine with a door: the pad aimed at shut door a parks you, open it and the pad sends you through (L45) → breather: two corner pads carry one roll round a whole loop (L46) → combine with a crack: once the crack the pad aims at is spent, the pad becomes a stop (L47) → pads in a chain, two bends in one roll (L48) → pads + two colours + a crack (L49) → finale: a 28-tile frame with a pad staircase and a bend that is later rolled straight over (L50).
 
-| # | Name | Role | Intent / aha |
-|---|------|------|--------------|
-| 25 | Against the Clock | teach | Plan the single-pass route up front — improvising wastes crumbles you can't recover. |
-| 26 | Time Lock | practise | A long two-gate maze, generous clock — sustain a key-ordered plan at speed. |
-| 27 | Rush Doors | twist | Three gates, tighter clock — decide the key order once, then paint without stopping. |
-| 28 | Timed Cracks | combine | Two gates and a crumble under the clock, no time to backtrack. |
-| 29 | Big Sprint | practise | A big crumble sprint — fast single-pass routing across a 5×5 maze. |
-| 30 | Clockwork | finale | The largest timed two-gate maze — planning and pace together. |
+| # | Name | Role | Par | Intent / aha |
+|---|------|------|-----|--------------|
+| 41 | Turn Pad | Teach | 6 | Teach (turn pad). A ring round a walled pocket; the pocket row's only entrance is a pad (^) in the bottom row, west of the start. A pad turns any roll that enters it. Aha: go round the ring the long way (east, up, west, down) and the last roll east along the bottom hits the pad and is lifted into the pocket row (6). Rolling west first or up first costs 2 swipes. |
+| 42 | Side Turn | Practise | 6 | Practise (a pad mid-row). A pad (v) sits beside the start in the middle row, over a two-wide west wing. Aha: any roll that crosses it is bent down column 2, so the middle row must be painted from the east: go down and up the west wall, run the top row, drop to the middle row's east end, and one roll west paints the row and turns down to the floor (8 tiles in one swipe); the bottom row finishes (6). Rolling east from the start turns you down at once and costs a swipe. |
+| 43 | Pad Stop | Twist | 7 | Twist (a pad as a stop). The floor row's pad (v) points into the board edge, so it can never turn you — any roll that reaches it stops on it. Aha: plan around the stop: sweep the top room first (east, west, up, east), drop down the east shaft, and the floor is painted in two rolls split at the pad (7). Starting west or up costs a swipe. |
+| 44 | Bounce Back | Twist | 8 | Twist (U-turn pad). A pad (<) in the middle row points back west; a pad (v) in the top row drops rolls into the west room. Aha: a roll east along the middle row bounces off the < pad and comes straight back to the west wall, painting the row in one round trip — climb first, let the v pad drop you into the middle row, bounce, then run the outer ring (8). Down first costs a swipe. |
+| 45 | Door Pad | Combine | 10 | Combine (pad + door). Door a sits in the top row and the pad (>) in the north-west corner points along that row straight at it; a second pad (^) in row 2 points into a wall, so it is a stop. Aha: while a is shut it is just a stop; fetch key A from the bottom row, use the ^ pad to park in the middle of the hall, and finish by climbing the west wall — the corner pad turns you east, through the open door (10). |
+| 46 | Loop Ride | Breather | 3 | Breather (pad chain). A ring with a pad on each top corner: < in the north-east, v in the north-west. Aha: sweep the bottom row both ways, then one swipe up the east side is turned west along the top by the < pad and down the west side by the v pad — 11 tiles in a single roll (3). |
+| 47 | Broken Bend | Combine | 9 | Combine (pad + crack). A ^ pad at the east end of row 2 points up at a crack in the corner above it. Aha: the first roll east is lifted onto the crack and spends it; from then on the hole stops any climb of the east column on the pad — so the climb from the floor parks there and row 2 is swept west from it, with row 3 last (9). The other starts cost a swipe. |
+| 48 | Pad Chain | Practise | 8 | Practise (pads in a chain). A < pad in the top row's east corner feeds a v pad in the same row. Aha: the first roll east along the top is dropped into row 2 by the v pad; later the climb of column 5 reaches the top row, the < pad sends you back west and the v pad drops you again — two bends in one roll, landing where row 2's last tile waits (8). Down first costs a swipe. |
+| 49 | Pad Locks | Combine | 11 | Combine (pads + two colours + a crack). Key A heads the west room and door a its floor; key B, door b and a crack share rows 3-4; a > pad in the west room and a < pad in the north-east corner. Aha: paint A on the row-2 sweep and go down through a; the climb from the floor is bent east by the > pad straight into B; row 4 then runs through b and the crack in one stroke, and the last climb up the east column hits the corner pad and turns west along the top row (11). Down first is the only optimal start. |
+| 50 | Grand Bends | Finale | 11 | Finale (Turn Pads). A 28-tile frame: a two-row hall with three pads (v and ^ side by side near its west end, > in the middle of row 2), three shafts hanging down and a floor with key A and door a joining the west and middle shafts. Aha: the v and ^ pads turn the hall's west end into a staircase you descend in single steps; A at the foot of the west shaft opens a, the climb of the middle shaft is bent east by the > pad, and the hall is closed by rolling straight over that same pad (entered heading east it lets you through) before the east shaft (11). Three openings, all within 1. |
 
-## Chapter 6 · Master Mazes — *the graduation*  (L31–36)
+## Chapter 6 · Master Mazes — *everything together*  (L51–60)
 
-No new mechanic: the chapter interleaves everything at master scale. Untimed
-except the one sprint, so difficulty is pure planning depth.
+**The fourth colour (D) and everything mixed**, with pads used throughout so late levels keep fresh ideas. The clock appears here only, as a light flavour on two short boards (L53, L58: 120 s for a 7-swipe par — never a reading-speed test). Gentle opener with D (L51) → a pad staircase (L52) → first clock (L53) → pad + crack + two colours (L54) → three colours + two pads (L55) → breather (L56) → twist: all four colours on a branching board (L57) → short timed sprint (L58) → penultimate keymaster (L59) → finale: a 33-tile tower of everything — three colours, a crack, a U-turn pad and a bending pad (L60).
 
-| # | Name | Role | Intent / aha |
-|---|------|------|--------------|
-| 31 | Master Keys | combine | Three gates on a dense maze, untimed — long-horizon key planning. |
-| 32 | Grand Vault | practise | Three locks across a 5×5 maze — hold several key orders at once. |
-| 33 | Shatter Hall | combine | Two gates plus a crumble, master size — design the one irreversible tile out of your route. |
-| 34 | Four Locks | twist | Four colour locks (A–D) — the most ever; track four keys and their forced order. |
-| 35 | Final Sprint | combine | The one timed master maze — a 5×5 crumble sprint, everything against the clock. |
-| 36 | Masterpiece | finale | Four locks and a crumble on the biggest maze — route-finding, four keys and single-pass discipline in one. |
+| # | Name | Role | Par | Intent / aha |
+|---|------|------|-----|--------------|
+| 51 | Fourth Key | Master opener | 9 | Master opener, gentle but new: the fourth colour (D) arrives on a 15-tile board with all four colours. Aha: every shut door is a stop — the first roll paints B and stops on d, the second stops on a, the third paints A and stops on c — and the doors then open in the order b, d, a, c (9). |
+| 52 | Pad Hall | Practise | 8 | Practise (master: a pad staircase). Two ^ pads step diagonally down the west side; key A sits above the upper one, door a closes the middle column's foot. Aha: door a stops your first drop, then two short rolls west climb the staircase — each pad lifts you one row, the second straight through key A; with a open the middle column is ridden to the floor and the east column climbed last (8). |
+| 53 | First Clock | Practise ⏱120s | 7 | First clock, short and gentle (120 s for a 7-swipe par — the clock is a flavour, never a reading-speed test). Keys A and B sit together at the floor's west end; door a ends the floor and door b is the hall's east wall. Aha: sweep row 2 west, step down onto A, and one roll east paints B and passes a in the same stroke; the top row and a last hop through b finish (7). |
+| 54 | Shatter Hall | Combine | 10 | Combine (pad + crack + two colours, 19 tiles). A ^ pad in the floor row points up at a crack; key B and door a guard the west, key A and door b the east end of the floor. Aha: door a stops the first roll west so B can be painted; the floor roll east is lifted by the pad onto the crack and spends it; after b, the roll back west paints A and the same pad now stops you (its arrow points at the hole), lining you up for the middle row through a (10). |
+| 55 | Deep Vault | Practise | 11 | Practise (three colours, two pads, 21 tiles). Key A is east of the start, B and C at the foot and head of the west column; doors b (top), c and a (floor row); a v pad tips row-3 rolls down and a > pad in column 2 faces a wall, so it is a stop. Aha: A first, then the v pad drops you back beside the start; the west column paints B and C in two climbs, b opens the second column, whose > pad stops your drop one row short of the floor — step down and the floor roll passes c and a (11). |
+| 56 | Quiet Gallery | Breather | 6 | Breather between master levels (14 tiles). A < pad at the top of the east column tips climbs into the little top nook; key A and door a share the third row. Aha: roll east and climb — the pad tips you into the nook — drop back down the nook's column to paint A, then the bottom row, a one-tile hop up through a, and the third row finishes (6). |
+| 57 | Four Locks | Twist | 11 | Twist (all four colours, branching). Door c in the top row, doors d and a stacked in the east shaft, door b on the floor; keys C and B in the middle room, D on the west wall, A on the floor. Aha: shut c is the first stop; the drop from it paints C and B together; D falls on the way down the west side, and the floor roll paints A and passes b in one stroke, so the east shaft opens d and a in a single climb and the top row passes c (11). |
+| 58 | Final Sprint | Sprint ⏱120s | 7 | Short master sprint under a generous clock (120 s for 7 swipes). Key A on the floor row, door a in the west column; key B and door b share the top row. Aha: drop and roll east for A, climb the west column through a, and the long row-2 roll sets up the final roll west along the top, which paints B and passes b in the same stroke (7). |
+| 59 | Keymaster | Penultimate | 17 | Penultimate. The west shaft is a stack of locks — crack, a, b, C — and its one climb is the second-to-last stroke. Aha: open A, then B (using shut c as the stop), crack the east notch to create the stops, and save the shaft for last (17). |
+| 60 | Masterpiece | Finale | 14 | Finale (game). A 33-tile tower of everything: three colours, a crack and two pads — a v pad mid-hall that turns any climb back down (a U-turn) and a > pad in the west column that bends every climb east along the hall's middle row. Aha: the U-turn pad makes the first climb drop you straight back to the floor; A at the foot of the west column opens a, and each climb of the west column is bent east by the > pad — first stopping under shut door c, later (after B, the crack and C) again; c opens the corner and the last roll west stops at the spent crack (14). Three openings; up is best. |
 
 ---
 
-*This plan and `src/game/sim.ts` `describe()` are kept in lock-step: every level's
-`INTENTS` entry matches its row above, and `npm run levels` prints them beside the
-solver's optimal-move, branching and trap-rate facts for review.*
+*This plan and `src/game/sim.ts` `describe()` are kept in lock-step: every level's `INTENTS` entry is the row above, and `npm run levels` prints it beside the solver's optimal-move, branching and trap-rate facts for review.*

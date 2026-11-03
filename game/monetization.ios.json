@@ -1,0 +1,9 @@
+{
+  "_note": "iOS (App Store) AdMob ids. Used only when Platform.OS === 'ios' (src/modules/ads.ts) and for the iOS GADApplicationIdentifier (app.config.js). Android keeps monetization.json.",
+  "admob": {
+    "appId": "ca-app-pub-5054561222360217~5977559796",
+    "banner": "ca-app-pub-5054561222360217/9164539499",
+    "rewarded": "ca-app-pub-5054561222360217/4588456501",
+    "interstitial": "ca-app-pub-5054561222360217/7851457826"
+  }
+}

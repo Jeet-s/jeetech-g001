@@ -2,19 +2,35 @@
   "expo": {
     "name": "Path Painter",
     "slug": "path-painter",
-    "version": "1.0.4",
+    "version": "1.0.7",
     "orientation": "portrait",
     "android": {
       "package": "com.jeetech.g001",
-      "versionCode": 5,
+      "versionCode": 8,
       "permissions": [],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/store/adaptive-foreground.png",
+        "backgroundColor": "#3390fc"
+      },
+      "googleServicesFile": "./google-services.json"
     },
-    "scheme": "pathpainter"
+    "scheme": "pathpainter",
+    "icon": "./assets/store/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.jeetech.g001",
+      "buildNumber": "6.29877083",
+      "appleTeamId": "BJ9K59US7U",
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "icon": "./assets/ios-icon.png"
+    }
   }
 }

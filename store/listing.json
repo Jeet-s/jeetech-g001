@@ -4,34 +4,31 @@
     "problems": [],
     "secondary": [
       "maze painting",
-      "color fill game",
-      "swipe paint puzzle"
+      "swipe paint puzzle",
+      "color fill game"
     ]
   },
-  "title": "Path Painter: Paint Puzzle",
+  "title": "Paint Puzzle: Painty Path",
   "category": "Puzzle",
   "keywords": [
     "paint puzzle",
-    "paint puzzle game",
     "maze painting",
-    "color fill game",
     "swipe paint puzzle",
-    "color fill games",
+    "color fill game",
+    "maze paint puzzle",
+    "paint puzzle game",
     "color fill games offline",
-    "ball paint puzzle",
-    "maze ball paint puzzle",
-    "color fill 3d game"
+    "ball paint puzzle"
   ],
-  "release_notes": "Launch build: 60+ handcrafted levels, chapters with gates, switches, one-way tiles, crumble floors, daily puzzle, colorblind and high-contrast modes, haptics, optional timers, coins and cosmetics, rewarded hints/undos, Remove Ads IAP, and performance optimizations.",
+  "release_notes": "First release of Path Painter: 60 handcrafted paint puzzle levels in 6 chapters, a daily puzzle with streaks, hints, unlimited undo, a painting gallery to collect, colourblind mode, and full offline play.",
   "content_rating": "Everyone",
-  "full_description": "Paint puzzle fans will love Path Painter—a cozy, swipe-to-paint challenge where every move colors the board and unlocks smart gate logic. Glide your finger to create a continuous path, fill tiles, trigger switches, and sequence colors to open doors. Quick levels fit perfectly into your day, with optional timers for an extra kick and accessible palettes so everyone can enjoy.\n\nHow it plays\n• Swipe to paint: smooth, grid-snapped strokes that feel great\n• Unlock gates: fill the right colors or follow the shown order\n• Tap switches, cross one-way tiles, and plan around crumble floors\n• Beat goals like fill %, color order, and light time or move targets\n• Earn stars and coins to unlock chapters and stylish brush trails\n\nDesigned for clarity and flow\n• One-handed portrait play with simple touch controls\n• Undo and reset anytime; optional hints when you need a nudge\n• Colorblind-friendly palettes and patterned gates for readability\n• Haptics and soft audio for a satisfying, zen vibe\n\nContent and progression\n• 60+ handcrafted stages at launch, from calm to clever\n• Chapters introduce mechanics gradually—great for learning and mastery\n• Daily Puzzle delivers a fresh handcrafted challenge and streaks\n• Offline-friendly: enjoy most content without a connection\n\nChallenge that respects your time\n• Typical rounds last 30–90 seconds—perfect on the go\n• Adaptive help after several retries so you keep moving forward\n• Earn cosmetics with play; optional Remove Ads upgrade available\n\nWhy you’ll stay\n• Smart sequences turn simple coloring into strategic flow\n• Clean visuals make every completed board feel delightful\n• Quick restarts invite experimentation and satisfying solutions\n\nIf you enjoy a thoughtful color fill game with silky swipes and tidy logic, Path Painter is for you. Try the first chapter, master the maze painting routes, and color your way to a perfect board today!",
+  "full_description": "Path Painter is a paint puzzle where one swipe sends your brush rolling until it hits a wall, painting every tile it crosses. Fill the whole board to win, and plan your route so you do it in as few swipes as possible.\n\nEasy to learn, satisfying to solve. Sessions are short, so you can play one-handed in a spare minute or settle in for a longer run.\n\nHOW IT PLAYS\n• Swipe in any direction and the brush rolls until something stops it\n• Every tile you cross gets painted\n• Paint all the tiles to clear the level\n• Undo as often as you like, or restart the level in one tap\n\n60 HANDCRAFTED LEVELS IN 6 CHAPTERS\nEach chapter adds a new idea to this swipe paint puzzle:\n• Basics: learn how the brush rolls\n• Switches & Gates: grab a key switch to open the door of the same colour\n• Color Sequencing: choose the order carefully\n• Crumble Hazards: cracked tiles break after one pass\n• Turn Pads: arrow tiles bend the rolling brush\n• Master Mazes: everything together, including two timed levels with a generous clock\n\nEvery other level is untimed, so you can think at your own pace.\n\nSTARS, COINS AND A GALLERY TO FINISH\n• Earn up to 3 stars per level. Match the fewest possible swipes for a Perfect par\n• Collect coins from every clear\n• Each chapter is a painting split into pieces. Clear a level to reveal its piece, then collect all 6 paintings\n• Use hints when you are stuck, paid with coins or an optional rewarded ad\n• Unlock cosmetic themes and character skins with in-game coins\n\nDAILY PUZZLE AND STREAKS\nCome back each day for a daily challenge and build your streak.\n\nMADE TO BE COMFORTABLE\n• Colourblind mode\n• Sound and haptics settings\n• Plays fully offline, with no account or login. Progress is saved on your device only\n• Optional Remove Ads purchase, plus coin packs\n\nIf you like a color fill puzzle that rewards planning ahead, this maze painting adventure is for you. Pick up your brush and start painting.",
   "screenshots_plan": [
-    "Swipe to paint paths",
-    "Unlock gates in order",
-    "Outsmart switches and arrows",
-    "Quick levels, optional timer",
-    "Daily puzzle, cozy themes",
-    "Accessible colorblind modes"
+    "Swipe to paint every tile",
+    "Unlock doors with key switches",
+    "Plan your route, beat par",
+    "Collect 6 paintings",
+    "Daily puzzle and streaks"
   ],
-  "short_description": "Relaxing paint puzzle with maze painting and clever gate logic."
+  "short_description": "A swipe paint puzzle: roll the brush through mazes and fill every tile."
 }

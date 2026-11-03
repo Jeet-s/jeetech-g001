@@ -7,14 +7,17 @@ import {
   purchaseUpdatedListener,
   purchaseErrorListener,
   type Purchase,
-} from "expo-iap";
+} from "./expo-iap-ios";
+import { Platform } from "react-native";
 import monetization from "../../monetization.json";
 import { store } from "./store";
 import { analytics } from "./analytics";
 
 /**
- * Google Play Billing via expo-iap. Products are defined in monetization.json
- * and created in Play Console by the factory's publisher (same SKUs).
+ * Store billing via expo-iap: Google Play Billing on Android, StoreKit on iOS.
+ * Products are defined in monetization.json and created in both stores by the
+ * factory's publisher (same SKUs). Only products the store returns are shown,
+ * at the store's own prices.
  */
 type Sku = { sku: string; consumable: boolean; coins?: number };
 const catalog: Sku[] = monetization.iap;
@@ -62,21 +65,36 @@ export const iap = {
     }
   },
 
+  /** Whether the store connection is up (Restore can actually reach the store). */
+  isConnected(): boolean {
+    return connected;
+  },
+
   items(): ShopItem[] {
     return items;
   },
 
   async purchase(sku: string): Promise<void> {
     if (!connected) return;
+    if (Platform.OS === "ios") {
+      // StoreKit. A cancelled sheet rejects here; the error listener logs it.
+      await requestPurchase({ request: { apple: { sku }, google: { skus: [sku] } }, type: "in-app" }).catch(() => {});
+      return;
+    }
     await requestPurchase({ request: { google: { skus: [sku] } }, type: "in-app" });
   },
 
   /** Re-grant non-consumables (remove_ads) on reinstall / new device. */
-  async restore(): Promise<void> {
-    if (!connected) return;
+  async restore(): Promise<boolean> {
+    if (!connected) return false;
     const owned = await getAvailablePurchases();
+    let restored = false;
     for (const p of owned ?? []) {
-      if (p.productId === "remove_ads") store.set({ adsRemoved: true });
+      if (p.productId === "remove_ads") {
+        store.set({ adsRemoved: true });
+        restored = true;
+      }
     }
+    return restored;
   },
 };

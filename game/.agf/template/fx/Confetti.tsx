@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { StyleSheet, useWindowDimensions } from "react-native";
 import { Canvas, Group, RoundedRect, Circle } from "@shopify/react-native-skia";
 import { Easing, useDerivedValue, useSharedValue, withTiming, type SharedValue } from "react-native-reanimated";
@@ -29,9 +29,18 @@ function Particle({ p, t, ox, oy }: { p: P; t: SharedValue<number>; ox: number; 
 /**
  * Confetti / sparkle burst (GPU, Skia). Change `trigger` to fire again. Mount it with the screen
  * (trigger 0 = idle) rather than when the moment happens.
- * Use on wins, unlocks, purchases, combos.
+ * Use on wins, unlocks, purchases, combos. Inside a Popup pass it as `underlay` (a Modal is its own window: confetti
+ * outside it renders underneath the dim).
+ * Memoised on its values (origin is usually a fresh object literal): an unmemoised Skia canvas re-renders on every
+ * parent state change — every move on a game screen — which piles up into soak ANRs.
  */
-export function Confetti({ trigger, count = 70, origin }: { trigger: number; count?: number; origin?: { x: number; y: number } }) {
+type ConfettiProps = { trigger: number; count?: number; origin?: { x: number; y: number } };
+export const Confetti = memo(
+  ConfettiCanvas,
+  (a: ConfettiProps, b: ConfettiProps) => a.trigger === b.trigger && a.count === b.count && a.origin?.x === b.origin?.x && a.origin?.y === b.origin?.y,
+);
+
+function ConfettiCanvas({ trigger, count = 70, origin }: ConfettiProps) {
   const { width, height } = useWindowDimensions();
   // Starts "finished" (every particle faded out) so the canvas can stay mounted: creating a Skia
   // canvas at the moment of a win stalls the frame the player is watching.

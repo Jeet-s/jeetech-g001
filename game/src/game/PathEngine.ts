@@ -3,7 +3,8 @@
  *
  * The player sits on a `start` tile. A swipe moves the brush in one orthogonal
  * direction until it is blocked (wall, closed gate, or a crumble tile it already
- * used). Every tile it rolls over gets painted. Win when every non-wall tile is
+ * used); a turn pad it rolls onto bends it to the pad's arrow. Every tile it
+ * rolls over gets painted. Win when every non-wall tile is
  * painted. This keeps paths strictly orthogonal (no diagonal leaks — QA gate)
  * and makes undo/reset trivial because every stroke is a discrete move.
  *
@@ -15,14 +16,29 @@
  *   'A'..'D' switch — paintable; painting it opens every gate of the same letter
  *   'a'..'d' gate — blocks until its switch is painted, then becomes paintable
  *   '*' crumble floor — paintable, but can only be rolled over once
+ *   '>' '<' '^' 'v' turn pad — paintable floor; a brush that ROLLS ONTO it turns
+ *       to the pad's direction and keeps rolling (if the next tile that way is
+ *       blocked it stops on the pad). A brush resting on a pad leaves it in the
+ *       swiped direction as normal — a pad only acts on entry. Pads can be
+ *       entered any number of times; a roll that would repeat the same
+ *       (tile, direction) — a closed pad loop — stops right there.
  */
 
-export type TileType = "wall" | "floor" | "start" | "switch" | "gate" | "crumble";
+export type TileType = "wall" | "floor" | "start" | "switch" | "gate" | "crumble" | "pad";
 
 export interface Tile {
   type: TileType;
   /** Pairing letter for switch/gate (uppercase normalised). */
   group?: string;
+  /** Turn pad direction. */
+  dir?: Direction;
+}
+
+/** One tile a roll entered, with the direction the brush was moving as it entered. */
+export interface PathStep {
+  x: number;
+  y: number;
+  dir: Direction;
 }
 
 export interface LevelSpec {
@@ -70,8 +86,11 @@ const DELTAS: Record<Direction, { dx: number; dy: number }> = {
   right: { dx: 1, dy: 0 },
 };
 
+const PAD_DIRS: Record<string, Direction> = { ">": "right", "<": "left", "^": "up", v: "down" };
+
 function parseTile(ch: string): Tile {
   if (ch === "." ) return { type: "floor" };
+  if (PAD_DIRS[ch]) return { type: "pad", dir: PAD_DIRS[ch] };
   if (ch === "o") return { type: "start" };
   if (ch === "*") return { type: "crumble" };
   if (ch >= "A" && ch <= "D") return { type: "switch", group: ch };
@@ -95,6 +114,8 @@ export class PathEngine {
   cursorY = 0;
   moves = 0;
   status: GameStatus = "playing";
+  /** Every tile the last committed roll entered, in order (bends included) — the UI animates along it. */
+  lastPath: PathStep[] = [];
 
   private history: Snapshot[] = [];
 
@@ -158,32 +179,54 @@ export class PathEngine {
     return true;
   }
 
-  /** Roll the brush until blocked. Returns the resulting status. */
+  /** Roll the brush until blocked (turn pads bend the roll). Returns the resulting status. */
   move(dir: Direction): GameStatus {
     if (this.status !== "playing") return this.status;
-    const { dx, dy } = DELTAS[dir];
+    let d = dir;
     let x = this.cursorX;
     let y = this.cursorY;
-    let steps = 0;
+    const path: PathStep[] = [];
     const snap = this.snapshot();
+    // Loop guard: a pad cycle repeats a (tile, heading) pair — the roll ends there.
+    const seen = new Set<string>([`${x},${y},${d}`]);
 
-    while (this.enterable(x + dx, y + dy)) {
+    for (;;) {
+      const { dx, dy } = DELTAS[d];
+      if (!this.enterable(x + dx, y + dy)) break;
       x += dx;
       y += dy;
       this.painted.add(key(x, y));
       const t = this.tiles[y][x];
       if (t.type === "switch" && t.group) this.openGroups.add(t.group);
-      steps++;
+      path.push({ x, y, dir: d });
+      if (t.type === "pad" && t.dir) d = t.dir;
+      const k = `${x},${y},${d}`;
+      if (seen.has(k)) break;
+      seen.add(k);
     }
 
-    if (steps === 0) return this.status; // nothing moved — don't cost a move
+    if (path.length === 0) return this.status; // nothing moved — don't cost a move
     this.cursorX = x;
     this.cursorY = y;
     this.moves++;
+    this.lastPath = path;
     this.history.push(snap);
 
     if (this.painted.size >= this.target) this.status = "won";
     return this.status;
+  }
+
+  /** The tiles a swipe in `dir` would roll over from here (bends included), without committing it. */
+  peek(dir: Direction): PathStep[] {
+    if (this.status !== "playing") return [];
+    const before = this.moves;
+    const last = this.lastPath;
+    this.move(dir);
+    if (this.moves === before) return [];
+    const path = this.lastPath;
+    this.undo();
+    this.lastPath = last;
+    return path;
   }
 
   /** Called by the timer. Marks the level lost when time runs out. */
@@ -204,6 +247,7 @@ export class PathEngine {
     this.cursorY = snap.cursorY;
     this.moves = snap.moves;
     this.status = "playing";
+    this.lastPath = [];
   }
 
   reset(): void {
@@ -212,6 +256,7 @@ export class PathEngine {
     this.moves = 0;
     this.status = "playing";
     this.history = [];
+    this.lastPath = [];
     // re-find start
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {

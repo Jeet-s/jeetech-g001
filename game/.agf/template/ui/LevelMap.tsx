@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { Canvas, Path, Skia, DashPathEffect } from "@shopify/react-native-skia";
+import { memo, useEffect, useMemo, useRef } from "react";
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Canvas, Group, Path, Skia, DashPathEffect } from "@shopify/react-native-skia";
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { MiniStars } from "./Stars";
 import { fonts, palette, shadow } from "./theme";
-import { feedback } from "../audio/sfx";
+import { Tappable } from "./Tappable";
 
 const NODE = 70;
 const GAP = 112;
 const BANNER_GAP = 76; // extra room where a chapter starts, so its banner never covers a node
+// The path is drawn in canvas tiles: one canvas the height of a long map exceeds the GPU's texture limit (16384 px —
+// 120 levels at 2.6x density is ~35000 px), which draws nothing on phones and crashed the QA emulator (2026-10-26).
+const TILE = 2000;
 
 export interface MapLevel {
   id: string;
@@ -29,9 +32,13 @@ function Pulse() {
 
 /**
  * Candy-style winding level map (bottom = level 1). Done levels show stars,
- * the current level pulses, future levels are locked.
+ * the current level pulses, future levels are locked. Nodes squash + dim on touch-down (Tappable) — "level-select
+ * tile press feedback is barely visible" was a game_feel finding (2026-10-21). Memoised: its path canvases only
+ * redraw when the levels / size change (pass a memoised `levels` and a stable `onSelect`).
  */
-export function LevelMap({
+export const LevelMap = memo(LevelMapView);
+
+function LevelMapView({
   levels,
   current,
   onSelect,
@@ -84,12 +91,16 @@ export function LevelMap({
   return (
     <ScrollView ref={scroll} contentContainerStyle={{ height }} showsVerticalScrollIndicator={false}>
       {header}
-      <Canvas style={{ position: "absolute", left: 0, top: 0, width, height }} pointerEvents="none">
-        <Path path={path} style="stroke" strokeWidth={18} color="rgba(0,0,0,0.25)" strokeCap="round" />
-        <Path path={path} style="stroke" strokeWidth={10} color="rgba(255,255,255,0.55)" strokeCap="round">
-          <DashPathEffect intervals={[2, 22]} />
-        </Path>
-      </Canvas>
+      {Array.from({ length: Math.ceil(height / TILE) }, (_, k) => (
+        <Canvas key={k} style={{ position: "absolute", left: 0, top: k * TILE, width, height: Math.min(TILE, height - k * TILE) }} pointerEvents="none">
+          <Group transform={[{ translateY: -k * TILE }]}>
+            <Path path={path} style="stroke" strokeWidth={18} color="rgba(0,0,0,0.25)" strokeCap="round" />
+            <Path path={path} style="stroke" strokeWidth={10} color="rgba(255,255,255,0.55)" strokeCap="round">
+              <DashPathEffect intervals={[2, 22]} />
+            </Path>
+          </Group>
+        </Canvas>
+      ))}
       {levels.map((l, i) => {
         const locked = l.stars < 0;
         const isCurrent = l.number === current;
@@ -101,16 +112,15 @@ export function LevelMap({
                 <Text style={styles.bannerText}>{l.chapter}</Text>
               </View>
             ) : null}
-            <Pressable
+            <Tappable
               disabled={locked}
-              onPress={() => {
-                feedback("pop", "medium");
-                onSelect(l);
-              }}
-              style={({ pressed }) => [
-                styles.nodeWrap,
-                { left: pos[i].x - NODE / 2, top: pos[i].y - NODE / 2, transform: [{ scale: pressed ? 0.9 : 1 }] },
-              ]}
+              sound="pop"
+              hapticKind="medium"
+              scaleTo={0.85}
+              onPress={() => onSelect(l)}
+              accessibilityLabel={`Level ${l.number}`}
+              containerStyle={[styles.nodeWrap, { left: pos[i].x - NODE / 2, top: pos[i].y - NODE / 2 }]}
+              style={styles.nodeFace}
             >
               {isCurrent ? <Pulse /> : null}
               <View style={[styles.lip, { backgroundColor: locked ? "#2A2160" : isCurrent ? palette.accentDark : palette.primaryDark }]} />
@@ -121,7 +131,7 @@ export function LevelMap({
                 <Text style={[styles.num, { color: isCurrent ? "#5A3500" : "#fff" }]}>{locked ? "🔒" : l.number}</Text>
               </LinearGradient>
               {!locked && !isCurrent ? <MiniStars count={l.stars} /> : null}
-            </Pressable>
+            </Tappable>
           </View>
         );
       })}
@@ -130,7 +140,8 @@ export function LevelMap({
 }
 
 const styles = StyleSheet.create({
-  nodeWrap: { position: "absolute", width: NODE, alignItems: "center" },
+  nodeWrap: { position: "absolute", width: NODE },
+  nodeFace: { width: NODE, alignItems: "center" },
   node: { width: NODE, height: NODE, borderRadius: NODE / 2, alignItems: "center", justifyContent: "center", borderWidth: 3, borderColor: "rgba(255,255,255,0.6)" },
   lip: { position: "absolute", top: 6, width: NODE, height: NODE, borderRadius: NODE / 2 },
   num: { fontFamily: fonts.display, fontSize: 26 },

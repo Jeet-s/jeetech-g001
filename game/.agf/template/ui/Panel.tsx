@@ -14,5 +14,6 @@ export function Panel({ children, style, dark }: { children: React.ReactNode; st
 const styles = StyleSheet.create({
   wrap: { borderRadius: radius.xl },
   lip: { position: "absolute", left: 0, right: 0, top: 8, bottom: -8, borderRadius: radius.xl },
-  face: { borderRadius: radius.xl, padding: 22 },
+  // flexShrink: a Popup caps the panel at the screen height and its body scrolls inside.
+  face: { borderRadius: radius.xl, padding: 22, flexShrink: 1 },
 });

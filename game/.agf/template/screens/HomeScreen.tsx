@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
@@ -12,14 +12,12 @@ import Animated, {
   withDelay,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { Background, CurrencyPill, GameButton, fonts, palette, radius, shadow, springs } from "../ui";
-import { feedback } from "../audio/sfx";
+import { Background, CurrencyPill, GameButton, Tappable, fonts, palette, radius, shadow } from "../ui";
 import { store } from "../modules/store";
 import { LEVELS } from "../game/lights";
-import { useBannerHeight } from "../modules/layout";
+import { useBottomInset } from "../modules/layout";
 
 /**
  * HOME = the game's title screen — the first thing a player (and a store screenshot) sees. It sells
@@ -40,7 +38,7 @@ export function HomeScreen({
   onSettings: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const bannerH = useBannerHeight();
+  const bottomInset = useBottomInset();
   const [s, setS] = useState(store.get());
   useEffect(() => store.subscribe(setS), []);
   const current = Math.min(LEVELS.length, Math.max(1, s.level));
@@ -74,20 +72,24 @@ export function HomeScreen({
         <CurrencyPill icon="🪙" value={s.coins} />
       </View>
 
-      <Animated.View entering={FadeInDown.duration(500).springify()} style={[styles.logoWrap, logoStyle]}>
-        <Text style={styles.logoShadow} numberOfLines={1} adjustsFontSizeToFit>
-          __GAME_NAME__
-        </Text>
-        <Text style={styles.logo} numberOfLines={1} adjustsFontSizeToFit>
-          __GAME_NAME__
-        </Text>
+      {/* `entering` and an animated transform never share one view (Reanimated lets the layout animation own the
+          transform — Strike Lanes' home rendered blank in the web preview, 2026-10-27): entrance outside, idle float inside. */}
+      <Animated.View entering={FadeInDown.duration(500).springify()}>
+        <Animated.View style={[styles.logoWrap, logoStyle]}>
+          <Text style={styles.logoShadow} numberOfLines={1} adjustsFontSizeToFit>
+            __GAME_NAME__
+          </Text>
+          <Text style={styles.logo} numberOfLines={1} adjustsFontSizeToFit>
+            __GAME_NAME__
+          </Text>
+        </Animated.View>
       </Animated.View>
 
       <View style={styles.heroArea} pointerEvents="none">
         <Hero />
       </View>
 
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + bannerH + 18 }]}>
+      <View style={[styles.bottom, { paddingBottom: bottomInset + 14 }]}>
         <Animated.View entering={FadeInUp.delay(150).duration(450)} style={styles.chapterCard}>
           <Text style={styles.chapterLabel}>{chapter}</Text>
           <View style={styles.progressTrack}>
@@ -98,8 +100,10 @@ export function HomeScreen({
           </Text>
         </Animated.View>
 
-        <Animated.View entering={ZoomIn.delay(250).springify()} style={[styles.playWrap, playStyle]}>
-          <GameButton label={`Play  ·  Level ${current}`} variant="accent" size="lg" sound="whoosh" onPress={() => onPlay(current)} />
+        <Animated.View entering={ZoomIn.delay(250).springify()} style={styles.playWrap}>
+          <Animated.View style={playStyle}>
+            <GameButton label={`Play  ·  Level ${current}`} variant="accent" size="lg" sound="whoosh" onPress={() => onPlay(current)} />
+          </Animated.View>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(350).duration(450)} style={styles.iconRow}>
@@ -112,26 +116,15 @@ export function HomeScreen({
   );
 }
 
-/** Round icon button with a label — secondary actions on the home screen. */
+/** Round icon button with a label — secondary actions on the home screen (Tappable: squash + dim on touch-down). */
 function RoundButton({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
-  const p = useSharedValue(0);
-  const st = useAnimatedStyle(() => ({ transform: [{ scale: 1 - p.value * 0.08 }] }));
   return (
-    <Pressable
-      onPressIn={() => (p.value = withSpring(1, springs.press))}
-      onPressOut={() => (p.value = withSpring(0, springs.press))}
-      onPress={() => {
-        feedback("tap", "light");
-        onPress();
-      }}
-      hitSlop={8}
-      style={styles.round}
-    >
-      <Animated.View style={[styles.roundFace, st]}>
+    <Tappable onPress={onPress} hitSlop={8} scaleTo={0.86} style={styles.round} accessibilityLabel={label}>
+      <View style={styles.roundFace}>
         <Text style={styles.roundIcon}>{icon}</Text>
-      </Animated.View>
-      <Text style={styles.roundLabel}>{label}</Text>
-    </Pressable>
+      </View>
+      <Text style={styles.roundLabel} numberOfLines={1}>{label}</Text>
+    </Tappable>
   );
 }
 

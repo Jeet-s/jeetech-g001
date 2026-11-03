@@ -11,7 +11,8 @@
     "build:android": "cd android && ./gradlew bundleRelease",
     "validate": "tsx scripts/validate.ts",
     "playtest": "tsx scripts/playtest.ts",
-    "levels": "tsx scripts/levels-report.ts"
+    "levels": "tsx scripts/levels-report.ts",
+    "pitfalls": "tsx scripts/pitfalls.ts"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",

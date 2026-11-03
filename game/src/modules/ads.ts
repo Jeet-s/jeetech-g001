@@ -5,7 +5,9 @@ import mobileAds, {
   RewardedAd,
   RewardedAdEventType,
 } from "react-native-google-mobile-ads";
+import { Platform } from "react-native";
 import monetization from "../../monetization.json";
+import monetizationIos from "../../monetization.ios.json";
 import { store } from "./store";
 import { analytics } from "./analytics";
 
@@ -19,7 +21,10 @@ import { analytics } from "./analytics";
 const MIN_SECONDS_BETWEEN_INTERSTITIALS = 90;
 const MIN_LEVELS_BETWEEN_INTERSTITIALS = 2;
 
-const ids = monetization.admob;
+// iOS serves from its own AdMob app/units; Android ids are never used on iOS.
+// No IDFA / App Tracking Transparency request is ever made (non-personalised
+// unless UMP consent allows otherwise).
+const ids = Platform.OS === "ios" ? monetizationIos.admob : monetization.admob;
 let ready = false;
 let lastInterstitialAt = Date.now() / 1000; // grace period after launch
 let levelsSinceInterstitial = 0;

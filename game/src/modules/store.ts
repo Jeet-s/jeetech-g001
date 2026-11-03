@@ -22,6 +22,16 @@ export interface PlayerState {
   settings: Settings;
   /** Whether the levels 1–2 tutorial has been completed (fires analytics once). */
   tutorialDone: boolean;
+  /** Local date (YYYY-MM-DD) the Daily Paint bonus was last claimed. */
+  dailyDay?: string;
+  /** Equipped brush colour (src/game/cosmetics.ts SkinId). */
+  skin: string;
+  /** Brush colours bought with coins (free ones are always owned). */
+  ownedSkins: string[];
+  /** Local date (YYYY-MM-DD) the Inbox daily gift was last claimed. */
+  giftDay?: string;
+  /** Inbox rewards already claimed: "chapter-N", "stars-N" (src/game/rewards.ts). */
+  claimedRewards: string[];
 }
 
 const KEY = "player_state_v1";
@@ -40,6 +50,9 @@ let state: PlayerState = {
   stars: {},
   settings: DEFAULT_SETTINGS,
   tutorialDone: false,
+  skin: "world",
+  ownedSkins: [],
+  claimedRewards: [],
 };
 
 const listeners = new Set<(s: PlayerState) => void>();

@@ -10,7 +10,14 @@
  * proof for any board whose stored solution is missing or does not cover.
  *
  * Difficulty is MEASURED through the engine: the strokes the solution takes to
- * win, plus a weight for each gate and crumble hazard the brush must plan around.
+ * win, plus a weight for each gate, crumble and turn-pad tile the brush must plan
+ * around (3 each), plus 3 for every "planning event" in the replay — a stroke the
+ * player has to read rather than eyeball: a roll bent by a turn pad, or one that
+ * ends on a pad or against a shut gate / spent crumble instead of a wall. Rule
+ * systems interact, so the total is scaled by +20 % for every mechanic family
+ * in play on the board (doors, colour order with 2+ keys, crumble, turn pads,
+ * the clock): a 10-stroke board that mixes three systems plans harder than a
+ * 10-stroke board of one.
  *
  * Prints exactly one final JSON line:
  *   {"levels": N, "solvable": M, "difficulty": [d1..dN]}
@@ -29,15 +36,32 @@ function countChar(level: LevelSpec, pred: (c: string) => boolean): number {
   return n;
 }
 
-/** Replay the level's stored solution; returns strokes-to-win, or -1 if it did not win. */
-function replaySolution(level: LevelSpec): number {
-  if (!level.solution) return -1;
+const STEP: Record<Direction, [number, number]> = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+
+/** A stroke that bent on a pad, ended on a pad, or stopped against a shut gate / spent crumble (not a wall). */
+function planningEvent(engine: PathEngine): boolean {
+  const path = engine.lastPath;
+  if (!path.length) return false;
+  if (path.some((p) => p.dir !== path[0].dir)) return true;
+  const end = path[path.length - 1];
+  const t = engine.tileAt(end.x, end.y);
+  if (t?.type === "pad") return true;
+  const [dx, dy] = STEP[end.dir];
+  const next = engine.tileAt(end.x + dx, end.y + dy);
+  return !!next && next.type !== "wall";
+}
+
+/** Replay the level's stored solution; returns strokes-to-win and planning events, or strokes -1 if it did not win. */
+function replaySolution(level: LevelSpec): { strokes: number; events: number } {
+  if (!level.solution) return { strokes: -1, events: 0 };
   const engine = new PathEngine(level);
+  let events = 0;
   for (const dir of level.solution) {
     engine.move(dir);
-    if (engine.status === "won") return engine.moves;
+    if (planningEvent(engine)) events++;
+    if (engine.status === "won") return { strokes: engine.moves, events };
   }
-  return engine.status === "won" ? engine.moves : -1;
+  return { strokes: engine.status === "won" ? engine.moves : -1, events };
 }
 
 function stateKey(e: PathEngine): string {
@@ -72,7 +96,8 @@ const unsolvable: number[] = [];
 let solvable = 0;
 
 for (const level of LEVELS) {
-  let strokes = replaySolution(level);
+  const replay = replaySolution(level);
+  let strokes = replay.strokes;
   if (strokes < 0) strokes = dfsSolve(level);
   if (strokes < 0) {
     unsolvable.push(level.id);
@@ -82,7 +107,10 @@ for (const level of LEVELS) {
   solvable++;
   const gates = countChar(level, (c) => c >= "a" && c <= "d");
   const crumble = countChar(level, (c) => c === "*");
-  difficulty.push(strokes + 3 * (gates + crumble));
+  const pads = countChar(level, (c) => "<>^v".includes(c));
+  const keys = new Set(level.grid.join("").match(/[A-D]/g) ?? []).size;
+  const families = (gates ? 1 : 0) + (keys >= 2 ? 1 : 0) + (crumble ? 1 : 0) + (pads ? 1 : 0) + (level.timeLimitSeconds > 0 ? 1 : 0);
+  difficulty.push(Math.round((strokes + 3 * (gates + crumble + pads) + 3 * replay.events) * (1 + 0.2 * families)));
 }
 
 // Difficulty must rise: the late third should be at least 3x the early third.

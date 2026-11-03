@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
-import { View, StyleSheet, Linking } from "react-native";
+import { View, StyleSheet, Linking, Platform, Settings } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { GameScreen } from "./screens/GameScreen";
 import { ShopScreen } from "./screens/ShopScreen";
 import { analytics } from "./modules/analytics";
 import { ads } from "./modules/ads";
-import { iap } from "./modules/iap";
+import { connectStore } from "./modules/storeConnect";
 import { store } from "./modules/store";
 import { layout } from "./modules/layout";
 import { fontMap } from "./ui/fonts";
 import { ScreenshotScene } from "./screenshots";
+import { qa } from "./modules/qa";
 
 /**
  * Root of the premium runtime. Boot order matters: fonts → player state →
@@ -26,8 +27,22 @@ export default function App() {
   // without ads or billing. undefined = still checking the launch URL.
   const [shot, setShot] = useState<string | null | undefined>(undefined);
   useEffect(() => {
+    // iOS store captures launch with `-AGFShot <id>` (a deep link would raise
+    // an "Open in …?" prompt); the argument lands in NSUserDefaults.
+    if (Platform.OS === "ios") {
+      const arg = Settings.get("AGFShot");
+      if (typeof arg === "string" && /^[\w-]+$/.test(arg)) {
+        setShot(arg);
+        return;
+      }
+    }
     Linking.getInitialURL()
-      .then((u) => setShot(u?.match(/shot\/([\w-]+)/)?.[1] ?? null))
+      .then((u) => {
+        // QA level replay (<scheme>://qa/level/<n>, src/modules/qa.ts): straight into level n.
+        const lv = Number(u?.match(/qa\/level\/(\d+)/)?.[1] ?? NaN);
+        if (Number.isFinite(lv) && lv > 0) qa.level = lv;
+        setShot(u?.match(/shot\/([\w-]+)/)?.[1] ?? null);
+      })
       .catch(() => setShot(null));
   }, []);
 
@@ -52,15 +67,19 @@ function Game() {
   const [booted, setBooted] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  // The banner sits above the gesture pill / home indicator; its measured
+  // height includes that inset so bottom controls clear both.
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     (async () => {
       await store.load();
       analytics.track("app_open");
       setBooted(true);
+      if (qa.level) return; // QA replay: no ads, no billing — nothing may cover the board
       await ads.init();
       setShowBanner(ads.canShowBanner());
-      await iap.init();
+      await connectStore();
     })();
     return store.subscribe(() => setShowBanner(ads.canShowBanner()));
   }, []);
@@ -75,7 +94,7 @@ function Game() {
       <View style={styles.flex}>{booted && <GameScreen onOpenShop={() => setShopOpen(true)} />}</View>
       <ShopScreen visible={shopOpen} onClose={() => setShopOpen(false)} />
       {showBanner && (
-        <View style={styles.banner} onLayout={(e) => layout.setBannerHeight(e.nativeEvent.layout.height)}>
+        <View style={[styles.banner, { paddingBottom: insets.bottom }]} onLayout={(e) => layout.setBannerHeight(e.nativeEvent.layout.height)}>
           <BannerAd unitId={ads.bannerUnitId} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
         </View>
       )}

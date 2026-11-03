@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform, Settings } from "react-native";
 import telemetry from "../../telemetry.json";
 
 /**
@@ -9,6 +10,9 @@ import telemetry from "../../telemetry.json";
  *
  * Privacy: events carry only gameplay facts (level numbers, moves, SKUs) and a
  * random install id. No names, emails, device ids, ad ids or location.
+ *
+ * iOS release builds don't log console output, so when the factory launches the app with `-AGFQA 1` the
+ * events are also mirrored into the app's own defaults (`agf_events`), which the simulator QA reads.
  */
 type Props = Record<string, string | number | boolean>;
 interface Ev { e: string; p: Props; t: number }
@@ -32,6 +36,9 @@ async function id(): Promise<string> {
   return installId;
 }
 
+/** The anonymous install id (also used to address this install's push notifications). */
+export const getInstallId = id;
+
 async function flush(): Promise<void> {
   timer = null;
   const batch = queue;
@@ -48,9 +55,24 @@ async function flush(): Promise<void> {
   }
 }
 
+const iosQa = Platform.OS === "ios" && !!(Settings.get?.("AGFQA") as unknown);
+const qaLines: string[] = [];
+function log(event: string, props: Props): void {
+  const line = JSON.stringify({ e: event, ...props });
+  console.log(`[agf-event] ${line}`);
+  if (!iosQa) return;
+  qaLines.push(line);
+  if (qaLines.length > 400) qaLines.shift();
+  Settings.set({ agf_events: qaLines.join("\n") });
+}
+
 export const analytics = {
+  /** Device-QA signal only (logged, never sent): e.g. "move" on every player action the game accepted. */
+  qa(event: string, props: Props = {}): void {
+    log(event, props);
+  },
   track(event: string, props: Props = {}): void {
-    console.log(`[agf-event] ${JSON.stringify({ e: event, ...props })}`);
+    log(event, props);
     if (!telemetry.url) return;
     queue.push({ e: event, p: props, t: Date.now() });
     if (queue.length >= 20) void flush();

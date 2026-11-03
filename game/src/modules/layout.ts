@@ -51,3 +51,15 @@ export function useBottomInset(extra = 0, opts?: { modal?: boolean }): number {
   const floor = opts?.modal ? NAV_BAR_FLOOR : GESTURE_PILL_FLOOR;
   return Math.max(insets.bottom, windowInset, floor) + extra;
 }
+
+/**
+ * Top padding for a screen header. Android keeps its tuned fixed padding
+ * (`base`); on iOS the header must clear the status bar / notch / Dynamic
+ * Island (top inset up to ~62pt), so it is the real inset plus a small gap,
+ * never less than `base`.
+ */
+export function useTopInset(base: number): number {
+  const insets = useSafeAreaInsets();
+  if (Platform.OS !== "ios") return base;
+  return Math.max(base, insets.top + 8);
+}

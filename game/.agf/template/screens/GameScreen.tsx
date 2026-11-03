@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  Background, Confetti, FailPopup, GameButton, Panel, TopBar, TutorialHand, WinPopup, FloatingText, feedback, fonts, palette, springs, useShake,
+  Background, Burst, Confetti, FailPopup, GameButton, Panel, TopBar, TutorialHand, WinPopup, FloatingText, feedback, fonts, palette, springs, useShake,
 } from "../ui";
 import { LEVELS, movesAllowed, press, solved, starsFor } from "../game/lights";
 import { store } from "../modules/store";
 import { ads } from "../modules/ads";
 import { analytics } from "../modules/analytics";
-import { useBannerHeight } from "../modules/layout";
+import { review } from "../modules/review";
+import { useBottomInset } from "../modules/layout";
+import { qa, reportNext } from "../modules/qa";
 
 /**
  * One tile. Flips ripple outward from the tapped tile (`delay` grows with distance), the tapped tile
@@ -76,9 +77,8 @@ export function GameScreen({ levelNumber, onExit, onSettings, onNextLevel, demo 
   demo?: { taps: number[]; win?: boolean };
 }) {
   const level = LEVELS[Math.max(0, Math.min(LEVELS.length - 1, levelNumber - 1))];
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const bannerH = useBannerHeight();
+  const bottomInset = useBottomInset();
   // The board gets whatever space is left between the HUD and the buttons (small phones → smaller,
   // tablets → bigger). Whole-pixel tiles: fractional widths make a flex row wrap.
   const [area, setArea] = useState({ y: 0, h: 0 });
@@ -93,6 +93,12 @@ export function GameScreen({ levelNumber, onExit, onSettings, onNextLevel, demo 
   const [floater, setFloater] = useState(0);
   const [lastTap, setLastTap] = useState<{ i: number; n: number }>({ i: -1, n: 0 });
   const [winWave, setWinWave] = useState(false);
+  const [burst, setBurst] = useState<{ x: number; y: number; n: number } | null>(null);
+  const boardRef = useRef<React.ComponentRef<typeof View>>(null);
+  // Board intro: rises and grows into place from 90 % / 50 % opacity — never from 0 (a blank board frame) and never a
+  // Reanimated `entering` (it stuck blank on Android and skewed measureInWindow while it ran, 2026-10-20..27).
+  const intro = useSharedValue(0);
+  const introStyle = useAnimatedStyle(() => ({ opacity: 0.5 + 0.5 * intro.value, transform: [{ translateY: (1 - intro.value) * 18 }, { scale: 0.9 + 0.1 * intro.value }] }));
   const flash = useSharedValue(0);
   const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
   const { style: shakeStyle, shake } = useShake();
@@ -122,10 +128,42 @@ export function GameScreen({ levelNumber, onExit, onSettings, onNextLevel, demo 
     return [...need];
   }, [level, taps]);
 
+  // Board geometry in this screen's coordinates (border 2 + padding 10 around the tiles).
+  const boardLeft = (width - boardSize) / 2;
+  const boardTop = area.y + (area.h - boardSize - 24) / 2 + 12;
+  const cellCenter = (i: number) => ({ x: boardLeft + (i % level.size) * tile + tile / 2, y: boardTop + Math.floor(i / level.size) * tile + tile / 2 });
+
+  useEffect(() => {
+    if (area.h <= 0) return;
+    intro.value = 0;
+    intro.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.back(1.4)) });
+  }, [area.h > 0, level, intro]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // QA level replay (src/modules/qa.ts): report the solver's next touch once the board is laid out and after every
+  // accepted move — measured FRESH at report time (a position cached during a transition skews every touch), after
+  // the intro has settled (450 ms) and with move animations short enough that the next report comes well within QA's
+  // ~3 s accept window.
+  useEffect(() => {
+    if (qa.level == null || area.h <= 0 || result) return;
+    const id = setTimeout(() => {
+      if (solved(board)) return reportNext(level.number, null);
+      const next = remaining[0];
+      if (next === undefined) return;
+      boardRef.current?.measureInWindow((x, y) => {
+        reportNext(level.number, { x: x + (next % level.size) * tile + tile / 2, y: y + Math.floor(next / level.size) * tile + tile / 2 });
+      });
+    }, moves === 0 ? 450 : 300);
+    return () => clearTimeout(id);
+  }, [board, area.h, tile, result]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function tap(i: number) {
     if (result) return;
     feedback("pop", "light");
     const next = press(board, level.size, i);
+    // Accepted move: on-device QA checks that every one of these visibly changes the board.
+    analytics.qa("move", { level: level.number });
+    // Per-move juice at the touched tile (ring + sparks), on top of the tile's own squash and the flip ripple.
+    setBurst((b) => ({ ...cellCenter(i), n: (b?.n ?? 0) + 1 }));
     setHistory((h) => [...h, board]);
     setTaps((t) => [...t, i]);
     setBoard(next);
@@ -146,6 +184,7 @@ export function GameScreen({ levelNumber, onExit, onSettings, onNextLevel, demo 
           level: Math.max(store.get().level, level.number + 1),
         });
         analytics.track("level_complete", { level: level.number, moves: moves + 1 });
+        review.levelWon(level.number); // Play in-app review at a happy moment (gated: level >= 3, 30-day cooldown, never in QA)
       }, 1100); // let the board celebrate before the popup
     } else if (moves + 1 >= allowed) {
       shake();
@@ -165,7 +204,7 @@ export function GameScreen({ levelNumber, onExit, onSettings, onNextLevel, demo 
     setMoves((m) => Math.max(0, m - 1));
   }
 
-  const showTutorial = level.number === 1 && moves === 0;
+  const showTutorial = level.number === 1 && moves === 0 && !result;
   const firstHint = remaining[0];
 
   return (
@@ -177,14 +216,17 @@ export function GameScreen({ levelNumber, onExit, onSettings, onNextLevel, demo 
         <Panel dark style={styles.stat}><Text style={styles.statLabel}>PAR ⭐⭐⭐</Text><Text style={styles.statValue}>{level.par}</Text></Panel>
       </View>
       <Text style={styles.goal}>Light up every tile</Text>
-      {level.number <= 2 ? (
+      {/* Hints hide once the level ends — a result popup must never overlap/clip a tutorial banner. */}
+      {level.number <= 2 && !result ? (
         <Text style={styles.coach}>Tap a tile: it flips itself and its neighbours</Text>
       ) : null}
       <View style={styles.boardArea} onLayout={(e) => setArea({ y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })}>
-        {/* Render only once the free space is measured: the entering animation would otherwise freeze the
-            first (pre-measure) size of the frame while the tiles shrink to fit — overlapping text and buttons. */}
+        {/* Render only once the free space is measured (tiles sized to fit from their first frame), then the board
+            intro plays on a wrapper; QA touches are measured on the inner tile grid (boardRef). */}
         {area.h > 0 ? (
-        <Animated.View entering={FadeInDown.springify().damping(14)} style={[styles.boardWrap, { width: boardSize + 20 }, shakeStyle]}>
+        <Animated.View style={introStyle}>
+        <Animated.View style={[styles.boardWrap, { width: boardSize + 24 }, shakeStyle]}>
+          <View ref={boardRef} collapsable={false}>
           {Array.from({ length: level.size }, (_, r) => (
             <View key={r} style={styles.row}>
               {Array.from({ length: level.size }, (_, c) => {
@@ -206,24 +248,24 @@ export function GameScreen({ levelNumber, onExit, onSettings, onNextLevel, demo 
               })}
             </View>
           ))}
+          </View>
           <Animated.View pointerEvents="none" style={[styles.flash, flashStyle]} />
+        </Animated.View>
         </Animated.View>
         ) : null}
       </View>
       {showTutorial && firstHint !== undefined && area.h > 0 ? (
         <TutorialHand
-          from={{
-            x: (width - boardSize) / 2 + (firstHint % level.size) * tile + tile / 2,
-            y: area.y + (area.h - boardSize - 20) / 2 + 10 + Math.floor(firstHint / level.size) * tile + tile / 2,
-          }}
+          from={cellCenter(firstHint)}
         />
       ) : null}
+      {burst ? <Burst key={burst.n} x={burst.x} y={burst.y} /> : null}
       {floater ? (
         <FloatingText key={floater} text="Brilliant!" x={width / 2} y={area.y + (area.h - boardSize) / 2 - 6} duration={1500} />
       ) : null}
       <Confetti trigger={winWave ? floater : 0} count={60} origin={{ x: width / 2, y: area.y + area.h / 2 }} />
       <Confetti trigger={winWave ? floater + 1000 : 0} count={50} origin={{ x: width / 2, y: area.y + area.h * 0.3 }} />
-      <View style={[styles.actions, { paddingBottom: insets.bottom + bannerH + 14 }]}>
+      <View style={[styles.actions, { paddingBottom: bottomInset + 12 }]}>
         <GameButton style={{ flex: 1 }} variant="light" label="↶ Undo" onPress={undo} disabled={!history.length} />
         <GameButton
           style={{ flex: 1 }}
